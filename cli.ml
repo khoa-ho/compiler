@@ -7,6 +7,6 @@ let print_arg = function
 let main () =
   let speclist = [("-length", Arg.Rest print_length, "Prints the lengths of each of the arguments")] in 
   let usage_msg = "Usage: my-project [flags] [args]\nAvailable flags:" in
-  Arg.parse speclist (fun arg -> print_endline arg) usage_msg
+  Arg.parse speclist print_endline usage_msg
 
 let _ = main ()
