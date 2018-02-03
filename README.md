@@ -3,7 +3,7 @@ Compiler
 
 Author
 ------
-__Khoa Ho__ [hokhoa@grinnell.edu]
+Khoa Ho [hokhoa@grinnell.edu]
 
 Overview
 --------
