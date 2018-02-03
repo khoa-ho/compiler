@@ -22,6 +22,6 @@ Installation
 
 ### Build
 Following are useful terminal commands
-* make (make all): build the project
-* make test: test
-* make clean: clean the binaries
+* `make` (`make all`): build the project
+* `make test`: test
+* `make clean`: clean the binaries
