@@ -1,2 +1,7 @@
-# compiler
-A compiler implemented in OCaml
+Compiler
+==========
+
+Overview
+--------
+A simple compiler implemented in OCaml
+
