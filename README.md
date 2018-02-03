@@ -17,8 +17,8 @@ Installation
 ------------
 
 ### Requirements:
-* OCaml (>= 4.02.3)
-* jbuilder
+* OCaml (>= 4.02.3) [https://ocaml.org/docs/install.html]
+* Dune (Jbuilder) [https://github.com/ocaml/dune]
 
 ### Build
 Following are useful terminal commands
