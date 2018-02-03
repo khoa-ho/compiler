@@ -1,0 +1,8 @@
+(jbuild_version 1)
+
+(executable
+ ((name cli)))
+
+ (install
+ ((section bin)
+  (files ((cli.exe as compiler)))))

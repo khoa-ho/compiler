@@ -1,0 +1,11 @@
+opam-version: "1.2.2"
+version: "1.0"
+maintainer: "hokhoa@grinnell.edu"
+authors: ["khoa-ho"]
+homepage: "https://github.com/khoa-ho/compiler"
+bug-reports: "https://github.com/khoa-ho/compiler/issues"
+dev-repo: "https://github.com/khoa-ho/compiler.git"
+license: "Apache-2.0"
+build: [
+  ["jbuilder" "build" "--only" "cli" "--root" "." "-j" jobs "@install"]
+]
