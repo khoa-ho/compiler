@@ -1,4 +1,7 @@
 #!/bin/bash
 
+# This is a git hook script that verifies what is about to be committed.
+# To enable, copy to ./git/hooks
+
 # Build and run the test suite
 make test
