@@ -9,4 +9,4 @@ let main () =
   let usage_msg = "Usage: my-project [flags] [args]\nAvailable flags:" in
   Arg.parse speclist print_endline usage_msg
 
-let _ = main () 
+let _ = main ()
