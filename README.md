@@ -23,7 +23,7 @@ Usage
 ### Build
 Following are useful terminal commands
 * `make` (`make all`): build the project
-* `make test`: test
+* `make test`: build and run the test suite
 * `make clean`: clean the binaries
 
 ### Execute
