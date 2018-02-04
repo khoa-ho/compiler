@@ -25,6 +25,7 @@ Following are useful terminal commands (can only be executed at the top level (i
 * `make` (`make all`): build the project
 * `make test`: build and run the test suite
 * `make clean`: clean the binaries
+
 To enable the pre-commit git hook (that runs `make test`), copy or symlink the `pre-commit` file from `githooks` to `.git/hooks
 
 ### Execute
