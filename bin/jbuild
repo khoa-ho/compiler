@@ -5,4 +5,4 @@
 
  (install
  ((section bin)
-  (files ((cli.exe as compiler)))))
+  (files ((cli.exe as main)))))

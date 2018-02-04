@@ -1,14 +1,19 @@
 (jbuild_version 1)
 
 (rule
+ ((targets (test0.output))
+  (action (with-stdout-to ${@} (run ${bin:main})))))
+
+(rule
  ((targets (test1.output))
-  (action (with-stdout-to ${@} (run ${bin:compiler} A chicken crosses the road)))))
+  (action (with-stdout-to ${@} (run ${bin:main} A chicken crosses the road)))))
 
 (rule
  ((targets (test2.output))
-  (action (with-stdout-to ${@} (run ${bin:compiler} -length A chicken crosses the road)))))
+  (action (with-stdout-to ${@} (run ${bin:main} -length A chicken crosses the road)))))
 
 (alias
  ((name runtest)
+  (action (run diff -uw ${path:test1.output} ${path:test1.expected}))
   (action (run diff -uw ${path:test1.output} ${path:test1.expected}))
   (action (run diff -uw ${path:test2.output} ${path:test2.expected}))))
