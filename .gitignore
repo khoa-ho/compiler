@@ -23,3 +23,4 @@ ex_io.ml
 
 # merlin
 .merlin
+compiler.install
