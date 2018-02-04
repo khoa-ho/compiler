@@ -27,7 +27,10 @@ Following are useful terminal commands
 * `make clean`: clean the binaries
 
 ### Execute
-Run the CLI with `jbuilder exec main [flags] [args]`.
+First go to the build folder
+`$ cd _build/install/default/bin`
+Run the CLI with 
+`$ main [flags] [args]`
 
 Currently available flag options are empty, `-length`, or `-help`. Mainly, the CLI will echo the args or the string length of the args, depending whether `-length` is enabled. One can use `-help` for the documentation of each flag option.
 
