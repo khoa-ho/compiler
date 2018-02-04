@@ -14,6 +14,12 @@
 
 (alias
  ((name runtest)
-  (action (run diff -uw ${path:test1.output} ${path:test1.expected}))
-  (action (run diff -uw ${path:test1.output} ${path:test1.expected}))
+  (action (run diff -uw ${path:test0.output} ${path:test0.expected}))))
+
+(alias
+ ((name runtest)
+  (action (run diff -uw ${path:test1.output} ${path:test1.expected}))))
+
+(alias
+ ((name runtest)
   (action (run diff -uw ${path:test2.output} ${path:test2.expected}))))
