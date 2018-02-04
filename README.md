@@ -21,19 +21,19 @@ Usage
 * Dune (Jbuilder) [https://github.com/ocaml/dune]
 
 ### Build
-Following are useful terminal commands
+Following are useful terminal commands (can only be executed at the top level (i.e. ./compiler))
 * `make` (`make all`): build the project
 * `make test`: build and run the test suite
 * `make clean`: clean the binaries
 
 ### Execute
-First go to the build folder
+To run the CLI, we have to go to the build folder
 
 `$ cd _build/install/default/bin`
 
-Run the CLI with
+and run the CLI with
 
-`$ main [flags] [args]`
+`$ ./main [flags] [args]`
 
 Currently available flag options are empty, `-length`, or `-help`. Mainly, the CLI will echo the args or the string length of the args, depending whether `-length` is enabled. One can use `-help` for the documentation of each flag option.
 
