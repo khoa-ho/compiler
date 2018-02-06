@@ -1,8 +1,8 @@
-let print_length = function
-  | arg -> print_endline (string_of_int (String.length arg))
+let print_length arg =
+  print_endline (string_of_int (String.length arg))
 
-let print_arg = function
-  | arg -> print_endline arg
+let print_arg arg =
+  print_endline arg
 
 let main () =
   let speclist = [("-length", Arg.Rest print_length, "Prints the lengths of each of the arguments")] in 
