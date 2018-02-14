@@ -1,5 +1,8 @@
+open Printf
+
 type token =
-  | TInt of int
+  | TInt  of int
+  | TBool of bool
   | TLParen
   | TRParen
   | TPlus
@@ -11,6 +14,7 @@ type token =
 let string_of_token (t:token) : string =
   match t with
   | TInt n  -> string_of_int n
+  | TBool b -> string_of_bool b
   | TLParen -> "("
   | TRParen -> ")"
   | TPlus   -> "+"
@@ -28,7 +32,7 @@ let peek (src:char Stream.t) : char =
   | Some ch -> ch
   | None    -> failwith "Unexpected end of file encountered"
 
-(* Pops the head of the stream and returns it, advancing the stream forward *)
+(* Pstrs the head of the stream and returns it, advancing the stream forward *)
 let advance : char Stream.t -> char = Stream.next
 
 (* Returns true iff this stream still has elements left *)
@@ -45,7 +49,21 @@ let is_digit (ch:char) : bool =
   let code = Char.code ch in
   48 <= code && code <= 57
 
-(* Note: lex contains two nested helper functions, lex_num and go *)
+(* let lex_string (src:char Stream.t) (str:string) =
+   let rec lex ch idx =
+    if idx = String.length str then str else
+      let next_ch = peek src in
+      if next_ch = str.[idx] then 
+        lex (advance src) (idx + 1) 
+      else
+        failwith (sprintf "Expected %c in %s. Got %c" str.[idx] str next_ch)
+   in
+   lex (advance src) 1
+
+   let lex_long_op (src:char Stream.t) (str:string) =
+   lex_string src str = str *)
+
+(* Note: lex contains four nested helper functions, lex_num, lex_string, lex_op and go *)
 let lex (src:char Stream.t) : token list =
   let rec lex_num acc =
     if is_digit (peek src) then
@@ -53,10 +71,21 @@ let lex (src:char Stream.t) : token list =
     else
       int_of_string acc
   in
+  let lex_string str =
+    let rec lex ch idx =
+      if idx = String.length str then str else
+        let next_ch = peek src in
+        if next_ch = str.[idx] then 
+          lex (advance src) (idx + 1) 
+        else
+          failwith (sprintf "Expected %c in %s. Got %c" str.[idx] str next_ch)
+    in
+    lex (advance src) 1
+  in
   let rec go () =
     if not (is_empty src) then
       let ch = peek src in
-      (* Note: the |> operator takes the result of the left-hand side
+      (* Note: the |> strerator takes the result of the left-hand side
        * and feeds it as an argument to the function on the right-hand
        * side.  ignore has type 'a -> unit---it allows us to throw
        * away the return type of a function we don't care about *)
@@ -67,11 +96,9 @@ let lex (src:char Stream.t) : token list =
       | '-' -> advance src |> ignore; TMinus :: go ()
       | '*' -> advance src |> ignore; TTimes :: go ()
       | '/' -> advance src |> ignore; TDivide :: go ()
-      | '<' -> advance src |> ignore;
-        if peek src = '=' then
-          begin advance src |> ignore; TLeq :: go () end
-        else
-          failwith (Printf.sprintf "Expected character '='. Found: %c" ch)
+      | '<' -> lex_string "<="    |> ignore; TLeq :: go () 
+      | 't' -> lex_string "true"  |> ignore; TBool true :: go ()
+      | 'f' -> lex_string "false" |> ignore; TBool false :: go ()
       | _   ->
         if is_whitespace ch then
           begin advance src |> ignore; go () end
@@ -79,7 +106,7 @@ let lex (src:char Stream.t) : token list =
           let n = lex_num "" in
           TInt n :: go ()
         else
-          failwith (Printf.sprintf "Unexpected character found: %c" ch)
+          failwith (sprintf "Unexpected character found: %c" ch)
     else
       []
   in
