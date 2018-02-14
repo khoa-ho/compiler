@@ -10,6 +10,7 @@ type token =
   | TTimes
   | TDivide
   | TLeq
+  | TIf
 
 let string_of_token (t:token) : string =
   match t with
@@ -22,6 +23,7 @@ let string_of_token (t:token) : string =
   | TTimes  -> "*"
   | TDivide -> "/"
   | TLeq    -> "<="
+  | TIf     -> "if"
 
 let string_of_token_list (toks:token list) : string =
   String.concat "," (List.map string_of_token toks)
@@ -49,21 +51,7 @@ let is_digit (ch:char) : bool =
   let code = Char.code ch in
   48 <= code && code <= 57
 
-(* let lex_string (src:char Stream.t) (str:string) =
-   let rec lex ch idx =
-    if idx = String.length str then str else
-      let next_ch = peek src in
-      if next_ch = str.[idx] then 
-        lex (advance src) (idx + 1) 
-      else
-        failwith (sprintf "Expected %c in %s. Got %c" str.[idx] str next_ch)
-   in
-   lex (advance src) 1
-
-   let lex_long_op (src:char Stream.t) (str:string) =
-   lex_string src str = str *)
-
-(* Note: lex contains four nested helper functions, lex_num, lex_string, lex_op and go *)
+(* Note: lex contains four nested helper functions, lex_num, lex_string, and go *)
 let lex (src:char Stream.t) : token list =
   let rec lex_num acc =
     if is_digit (peek src) then
@@ -99,6 +87,7 @@ let lex (src:char Stream.t) : token list =
       | '<' -> lex_string "<="    |> ignore; TLeq :: go () 
       | 't' -> lex_string "true"  |> ignore; TBool true :: go ()
       | 'f' -> lex_string "false" |> ignore; TBool false :: go ()
+      | 'i' -> lex_string "if"    |> ignore; TIf :: go ()
       | _   ->
         if is_whitespace ch then
           begin advance src |> ignore; go () end

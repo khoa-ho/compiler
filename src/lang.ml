@@ -12,7 +12,7 @@ let rec interpret_int (e:exp) : int =
   match e with
   | EInt n             -> n
   | EAdd (e1, e2)      -> interpret_int e1 + interpret_int e2
-  | ESubtract (e1, e2) -> interpret_int e1 + interpret_int e2
+  | ESubtract (e1, e2) -> interpret_int e1 - interpret_int e2
   | EMultiply (e1, e2) -> interpret_int e1 * interpret_int e2
   | EDivide (e1, e2)   -> interpret_int e1 / interpret_int e2
   | EIf (e1, e2, e3)   -> 
