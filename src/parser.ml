@@ -27,5 +27,5 @@ let rec parse (toks:token list) : (exp * token list) =
         let toks       = consume TRParen toks in
         (EAdd (e1, e2), toks)
       end
-    | t      -> failwith (Printf.sprintf "Unexpected token found: %s" (string_of_token t))
+    | t       -> failwith (Printf.sprintf "Unexpected token found: %s" (string_of_token t))
 

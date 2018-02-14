@@ -1,0 +1,6 @@
+# Structure of my project
+# Where to find the source files 
+S src
+
+# Where to find the cmi and cmt  
+B _build/src
