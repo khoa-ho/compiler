@@ -1,6 +1,7 @@
 open Printf
 
 type token =
+  | TNan
   | TInt  of int
   | TBool of bool
   | TLParen
@@ -14,6 +15,7 @@ type token =
 
 let string_of_token (t:token) : string =
   match t with
+  | TNan    -> "nan"
   | TInt n  -> string_of_int n
   | TBool b -> string_of_bool b
   | TLParen -> "("
@@ -59,9 +61,11 @@ let lex (src:char Stream.t) : token list =
     else
       int_of_string acc
   in
+  (* Redefine the function advance to output unit type instead of char *)
+  let advance src = advance src |> ignore in
   let lex_string str =
     let rec lex ch idx =
-      if idx = String.length str then str else
+      if idx = String.length str then ignore str else
         let next_ch = peek src in
         if next_ch = str.[idx] then 
           lex (advance src) (idx + 1) 
@@ -78,19 +82,20 @@ let lex (src:char Stream.t) : token list =
        * side.  ignore has type 'a -> unit---it allows us to throw
        * away the return type of a function we don't care about *)
       match ch with
-      | '(' -> advance src |> ignore; TLParen :: go ()
-      | ')' -> advance src |> ignore; TRParen :: go ()
-      | '+' -> advance src |> ignore; TPlus :: go ()
-      | '-' -> advance src |> ignore; TMinus :: go ()
-      | '*' -> advance src |> ignore; TTimes :: go ()
-      | '/' -> advance src |> ignore; TDivide :: go ()
-      | '<' -> lex_string "<="    |> ignore; TLeq :: go () 
-      | 't' -> lex_string "true"  |> ignore; TBool true :: go ()
-      | 'f' -> lex_string "false" |> ignore; TBool false :: go ()
-      | 'i' -> lex_string "if"    |> ignore; TIf :: go ()
+      | '(' -> advance src; TLParen :: go ()
+      | ')' -> advance src; TRParen :: go ()
+      | '+' -> advance src; TPlus :: go ()
+      | '-' -> advance src; TMinus :: go ()
+      | '*' -> advance src; TTimes :: go ()
+      | '/' -> advance src; TDivide :: go ()
+      | 'n' -> lex_string "nan";   TNan :: go ()
+      | '<' -> lex_string "<=";    TLeq :: go () 
+      | 't' -> lex_string "true";  TBool true :: go ()
+      | 'f' -> lex_string "false"; TBool false :: go ()
+      | 'i' -> lex_string "if";    TIf :: go ()
       | _   ->
         if is_whitespace ch then
-          begin advance src |> ignore; go () end
+          begin advance src; go () end
         else if is_digit ch then
           let n = lex_num "" in
           TInt n :: go ()
