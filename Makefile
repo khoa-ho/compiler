@@ -1,14 +1,30 @@
+OCBFLAGS :=
+OCB := ocamlbuild $(OCBFLAGS)
 
-.PHONY: all test clean
+.PHONY: all debug clean top
 
-# Build
-all:
-	jbuilder build @install
+all: compiler.native
+debug: all compiler.cma
 
-# Build and run tests
-test:
-	jbuilder runtest
+%.cma: .FORCE
+	$(OCB) $@
 
-# Clean up
+%.cmxa: .FORCE
+	$(OCB) $@
+
+%.native: .FORCE
+	$(OCB) $@
+
+%.p.native: .FORCE
+	$(OCB) $@
+
+%.byte: .FORCE
+	$(OCB) $@
+
+.FORCE:
+
 clean:
-	jbuilder clean
+	$(OCB) -clean
+
+top: compiler.cma
+	utop
