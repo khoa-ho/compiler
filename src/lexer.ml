@@ -6,6 +6,7 @@ type token =
   | TMinus
   | TTimes
   | TDivide
+  | TLeq
 
 let string_of_token (t:token) : string =
   match t with
@@ -16,6 +17,7 @@ let string_of_token (t:token) : string =
   | TMinus  -> "-"
   | TTimes  -> "*"
   | TDivide -> "/"
+  | TLeq    -> "<="
 
 let string_of_token_list (toks:token list) : string =
   String.concat "," (List.map string_of_token toks)
@@ -65,6 +67,8 @@ let lex (src:char Stream.t) : token list =
       | '-' -> advance src |> ignore; TMinus :: go ()
       | '*' -> advance src |> ignore; TTimes :: go ()
       | '/' -> advance src |> ignore; TDivide :: go ()
+      | '<' -> 
+        if peek src = '=' then advance src |> ignore; TDivide :: go ()
       | _   ->
         if is_whitespace ch then
           begin advance src |> ignore; go () end
