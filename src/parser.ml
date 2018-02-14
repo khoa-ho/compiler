@@ -13,9 +13,10 @@ let rec consume (t:token) (toks:token list) : token list =
       failwith (Printf.sprintf "Expected '%s', found '%s'" (string_of_token t) (string_of_token t'))
   | _ -> failwith "Encountered unexpected end of token stream"
 
-let is_bin_op = function
-  | (TPlus | TMinus | TTimes | TDivide) -> true
-  | _ -> false
+let is_bin_op (op:token) =
+  match op with
+  | (TPlus | TMinus | TTimes | TDivide | TLeq) -> (true, op)
+  | _ -> (false, op)
 
 let consume_bin_op (toks:token list) =
   match toks with
@@ -30,8 +31,9 @@ let rec parse (toks:token list) : (exp * token list) =
     | TInt n  -> (EInt n, advance toks)
     | TLParen -> begin
         let toks       = consume TLParen toks in
-        if peek toks |> is_bin_op then
-          let (op, toks) = consume_bin_op toks in
+        let (is_bin_op, op) = is_bin_op (peek toks) in
+        if is_bin_op then
+          let toks       = List.tl toks in
           let (e1, toks) = parse toks in
           let (e2, toks) = parse toks in
           let toks       = consume TRParen toks in
@@ -40,9 +42,10 @@ let rec parse (toks:token list) : (exp * token list) =
           | TMinus  -> (ESubtract (e1, e2), toks)
           | TTimes  -> (EMultiply (e1, e2), toks)
           | TDivide -> (EDivide   (e1, e2), toks)
+          | TLeq    -> (ELeq      (e1, e2), toks)
           | _ -> failwith ""
         else 
-          failwith "No binary token"
+          failwith (Printf.sprintf "%s is not a binary operator" (string_of_token op))
       end
     | t       -> failwith (Printf.sprintf "Unexpected token found: %s" (string_of_token t))
 

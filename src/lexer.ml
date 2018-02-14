@@ -67,8 +67,11 @@ let lex (src:char Stream.t) : token list =
       | '-' -> advance src |> ignore; TMinus :: go ()
       | '*' -> advance src |> ignore; TTimes :: go ()
       | '/' -> advance src |> ignore; TDivide :: go ()
-      | '<' -> 
-        if peek src = '=' then advance src |> ignore; TDivide :: go ()
+      | '<' -> advance src |> ignore;
+        if peek src = '=' then
+          begin advance src |> ignore; TLeq :: go () end
+        else
+          failwith (Printf.sprintf "Expected character '='. Found: %c" ch)
       | _   ->
         if is_whitespace ch then
           begin advance src |> ignore; go () end
