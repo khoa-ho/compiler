@@ -10,41 +10,61 @@ type exp =
   | ELeq      of exp * exp
   | EIf       of exp * exp * exp
 
-exception Nan
+type op =
+  | OPlus
+  | OMinus
+  | OTimes
+  | ODivide
+  | OLeq
 
-let rec interpret_int (e:exp) : int =
-  match e with
-  | ENan               -> raise Nan
-  | EInt n             -> n
-  | EAdd (e1, e2)      -> interpret_int e1 + interpret_int e2
-  | ESubtract (e1, e2) -> interpret_int e1 - interpret_int e2
-  | EMultiply (e1, e2) -> interpret_int e1 * interpret_int e2
-  | EDivide (e1, e2)   -> 
-    begin
-      let v2 = interpret_int e2 in
-      match v2 with
-      | 0 -> failwith "Division by zero found!"
-      | _ -> interpret_int e1 / v2
-    end
-  | EIf (e1, e2, e3)   -> 
-    if interpret_bool e1 then interpret_int e2 else interpret_int e3
-  | _                  -> failwith "This expression has type bool but an expression was expected of type int"
-and interpret_bool (e:exp) : bool =
-  match e with
-  | ENan          -> raise Nan
-  | EBool b       -> b
-  | ELeq (e1, e2) -> interpret_int e1 <= interpret_int e2
-  | _             -> failwith "This expression has type int but an expression was expected of type bool"
-and interpret_nan = "NaN"
+exception Nan 
 
-let interpret (e:exp) : string =
+let string_of_exp (e:exp) : string =
   match e with
-  | ENan -> interpret_nan
-  | (EBool _ | ELeq (_, _)) as e' -> 
-    begin 
-      try string_of_bool (interpret_bool e') with Nan -> interpret_nan 
-    end
-  | _ as e' -> 
-    begin
-      try interpret_int e' |> string_of_int with Nan -> interpret_nan
-    end
+  | ENan     -> "NaN"
+  | EInt n   -> string_of_int n
+  | EFloat f -> string_of_float f
+  | EBool b  -> string_of_bool b
+  | _        -> failwith "Expected a terminal expression for 'string_of_exp'"
+
+let rec interpret (e:exp) : exp =
+  match e with
+  | EAdd (e1, e2)      -> interpret_bin_op OPlus e1 e2
+  | ESubtract (e1, e2) -> interpret_bin_op OMinus e1 e2
+  | EMultiply (e1, e2) -> interpret_bin_op OTimes e1 e2
+  | EDivide (e1, e2)   -> interpret_bin_op ODivide e1 e2
+  | ELeq (e1, e2)      -> interpret_bin_op OLeq e1 e2
+  | EIf (e1, e2, e3)   -> interpret_if e1 e2 e3
+  | _ as terminal_exp  -> terminal_exp
+and interpret_if (e1:exp) (e2:exp) (e3:exp) : exp =
+  match e1 with
+  | ENan             -> raise Nan
+  | EBool b          -> if b then interpret e2 else interpret e3
+  | ELeq (_, _) as e -> interpret (EIf ((interpret e), e2, e3))
+  | _  ->
+    failwith "Expected a boolean for the 1st sub-expression of 'if'-expression, instead got a numeric expression"
+and interpret_bin_op (o:op) (e1:exp) (e2:exp) : exp =
+  let v1 = interpret e1 in
+  let v2 = interpret e2 in
+  match (v1, v2) with
+  | ((ENan, _) | (_, ENan)) -> ENan
+  | (EInt n1, EInt n2)      -> interpret_int_bin_op o n1 n2
+  | (EInt n1, EFloat f2)    -> interpret_float_bin_op o (float_of_int n1) f2
+  | (EFloat f1, EInt n2)    -> interpret_float_bin_op o f1 (float_of_int n2)
+  | (EFloat f1, EFloat f2)  -> interpret_float_bin_op o f1 f2
+  | _                       ->
+    failwith "Expected 2 numeric sub-expressions for a binary expression, instead got 1 or 2 boolean sub-expression"
+and interpret_int_bin_op (o:op) n1 n2 : exp =
+  match o with
+  | OPlus   -> EInt (n1 + n2)
+  | OMinus  -> EInt (n1 - n2)
+  | OTimes  -> EInt (n1 * n2)
+  | ODivide -> if n2 != 0 then EInt (n1 / n2) else failwith "Division by zero!"
+  | OLeq    -> EBool (n1 <= n2)
+and interpret_float_bin_op (o:op) f1 f2 : exp =
+  match o with
+  | OPlus   -> EFloat (f1 +. f2)
+  | OMinus  -> EFloat (f1 -. f2)
+  | OTimes  -> EFloat (f1 *. f2)
+  | ODivide -> if f2 != 0. then EFloat (f1 /. f2) else failwith "Division by zero!"
+  | OLeq    -> EBool (f1 <= f2)

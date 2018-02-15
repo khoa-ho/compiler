@@ -61,9 +61,10 @@ let lex (src:char Stream.t) : token list =
     else acc
   in
   let rec lex_num acc =
-    if is_digit (peek src) then
+    let next_ch = peek src in
+    if is_digit next_ch then
       lex_num (acc ^ (Char.escaped (advance src)))
-    else if peek src != '.' then
+    else if next_ch != '.' then
       TInt (int_of_string acc)
     else
       begin
@@ -98,7 +99,7 @@ let lex (src:char Stream.t) : token list =
       | '-' -> advance src; TMinus :: go ()
       | '*' -> advance src; TTimes :: go ()
       | '/' -> advance src; TDivide :: go ()
-      | 'n' -> lex_string "nan";   TNan :: go ()
+      | 'N' -> lex_string "NaN";   TNan :: go ()
       | '<' -> lex_string "<=";    TLeq :: go () 
       | 't' -> lex_string "true";  TBool true :: go ()
       | 'f' -> lex_string "false"; TBool false :: go ()
