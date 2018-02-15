@@ -20,3 +20,4 @@ setup.data
 setup.log
 ex_cli.ml
 ex_io.ml
+test
