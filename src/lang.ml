@@ -17,8 +17,6 @@ type op =
   | ODivide
   | OLeq
 
-exception Nan 
-
 let string_of_exp (e:exp) : string =
   match e with
   | ENan     -> "NaN"
@@ -38,7 +36,7 @@ let rec interpret (e:exp) : exp =
   | _ as terminal_exp  -> terminal_exp
 and interpret_if (e1:exp) (e2:exp) (e3:exp) : exp =
   match e1 with
-  | ENan             -> raise Nan
+  | ENan             -> ENan
   | EBool b          -> if b then interpret e2 else interpret e3
   | ELeq (_, _) as e -> interpret (EIf ((interpret e), e2, e3))
   | _  ->
@@ -54,17 +52,17 @@ and interpret_bin_op (o:op) (e1:exp) (e2:exp) : exp =
   | (EFloat f1, EFloat f2)  -> interpret_float_bin_op o f1 f2
   | _                       ->
     failwith "Expected 2 numeric sub-expressions for a binary expression, instead got 1 or 2 boolean sub-expression"
-and interpret_int_bin_op (o:op) n1 n2 : exp =
+and interpret_int_bin_op (o:op) (n1:int) (n2:int) : exp =
   match o with
   | OPlus   -> EInt (n1 + n2)
   | OMinus  -> EInt (n1 - n2)
   | OTimes  -> EInt (n1 * n2)
-  | ODivide -> if n2 != 0 then EInt (n1 / n2) else failwith "Division by zero!"
+  | ODivide -> if n2 <> 0 then EInt (n1 / n2) else if n1 = 0 then ENan else failwith "Division by zero!"
   | OLeq    -> EBool (n1 <= n2)
-and interpret_float_bin_op (o:op) f1 f2 : exp =
+and interpret_float_bin_op (o:op) (f1:float) (f2:float) : exp =
   match o with
   | OPlus   -> EFloat (f1 +. f2)
   | OMinus  -> EFloat (f1 -. f2)
   | OTimes  -> EFloat (f1 *. f2)
-  | ODivide -> if f2 != 0. then EFloat (f1 /. f2) else failwith "Division by zero!"
+  | ODivide -> if f2 <> 0. then EFloat (f1 /. f2) else if f1 = 0. then ENan else failwith "Division by zero!"
   | OLeq    -> EBool (f1 <= f2)

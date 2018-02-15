@@ -14,7 +14,7 @@ type token =
 
 let string_of_token (t:token) : string =
   match t with
-  | TNan     -> "nan"
+  | TNan     -> "NaN"
   | TInt n   -> string_of_int n
   | TFloat f -> string_of_float f
   | TBool b  -> string_of_bool b
