@@ -1,6 +1,7 @@
 type exp =
   | ENan
   | EInt      of int
+  | EFloat    of float
   | EBool     of bool
   | EAdd      of exp * exp
   | ESubtract of exp * exp
@@ -41,7 +42,7 @@ let interpret (e:exp) : string =
   | ENan -> interpret_nan
   | (EBool _ | ELeq (_, _)) as e' -> 
     begin 
-      try interpret_bool e' |> string_of_bool with Nan -> interpret_nan 
+      try string_of_bool (interpret_bool e') with Nan -> interpret_nan 
     end
   | _ as e' -> 
     begin

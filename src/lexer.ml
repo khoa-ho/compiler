@@ -1,9 +1,8 @@
-open Printf
-
 type token =
   | TNan
-  | TInt  of int
+  | TInt of int
   | TBool of bool
+  | TFloat of float
   | TLParen
   | TRParen
   | TPlus
@@ -15,17 +14,18 @@ type token =
 
 let string_of_token (t:token) : string =
   match t with
-  | TNan    -> "nan"
-  | TInt n  -> string_of_int n
-  | TBool b -> string_of_bool b
-  | TLParen -> "("
-  | TRParen -> ")"
-  | TPlus   -> "+"
-  | TMinus  -> "-"
-  | TTimes  -> "*"
-  | TDivide -> "/"
-  | TLeq    -> "<="
-  | TIf     -> "if"
+  | TNan     -> "nan"
+  | TInt n   -> string_of_int n
+  | TFloat f -> string_of_float f
+  | TBool b  -> string_of_bool b
+  | TLParen  -> "("
+  | TRParen  -> ")"
+  | TPlus    -> "+"
+  | TMinus   -> "-"
+  | TTimes   -> "*"
+  | TDivide  -> "/"
+  | TLeq     -> "<="
+  | TIf      -> "if"
 
 let string_of_token_list (toks:token list) : string =
   String.concat "," (List.map string_of_token toks)
@@ -53,13 +53,23 @@ let is_digit (ch:char) : bool =
   let code = Char.code ch in
   48 <= code && code <= 57
 
-(* Note: lex contains four nested helper functions, lex_num, lex_string, and go *)
+(* Note: lex contains three nested helper functions, lex_num, lex_string, and go *)
 let lex (src:char Stream.t) : token list =
+  let rec lex_digits acc =
+    if is_digit (peek src) then
+      lex_digits (acc ^ (Char.escaped (advance src)))
+    else acc
+  in
   let rec lex_num acc =
     if is_digit (peek src) then
       lex_num (acc ^ (Char.escaped (advance src)))
+    else if peek src != '.' then
+      TInt (int_of_string acc)
     else
-      int_of_string acc
+      begin
+        advance src |> ignore;
+        TFloat (float_of_string (acc ^ "." ^ lex_digits ""))
+      end
   in
   (* Redefine the function advance to output unit type instead of char *)
   let advance src = advance src |> ignore in
@@ -70,7 +80,7 @@ let lex (src:char Stream.t) : token list =
         if next_ch = str.[idx] then 
           lex (advance src) (idx + 1) 
         else
-          failwith (sprintf "Expected %c in %s. Got %c" str.[idx] str next_ch)
+          failwith (Printf.sprintf "Expected %c in %s. Got %c" str.[idx] str next_ch)
     in
     lex (advance src) 1
   in
@@ -97,10 +107,10 @@ let lex (src:char Stream.t) : token list =
         if is_whitespace ch then
           begin advance src; go () end
         else if is_digit ch then
-          let n = lex_num "" in
-          TInt n :: go ()
+          (* let tok = lex_num in tok :: go () *)
+          let tok = lex_num "" in tok :: go ()
         else
-          failwith (sprintf "Unexpected character found: %c" ch)
+          failwith (Printf.sprintf "Unexpected character found: %c" ch)
     else
       []
   in

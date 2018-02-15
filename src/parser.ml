@@ -1,6 +1,5 @@
 open Lang
 open Lexer
-open Printf
 
 let rec peek : token list -> token = List.hd
 let rec advance : token list -> token list = List.tl
@@ -19,10 +18,11 @@ let rec parse (toks:token list) : (exp * token list) =
     failwith "Unexpected end of token stream"
   else
     match peek toks with
-    | TNan    -> (ENan, advance toks)
-    | TInt n  -> (EInt n, advance toks)
-    | TBool b -> (EBool b, advance toks)
-    | TLParen -> begin
+    | TNan     -> (ENan, advance toks)
+    | TInt n   -> (EInt n, advance toks)
+    | TFloat f -> (EFloat f, advance toks)
+    | TBool b  -> (EBool b, advance toks)
+    | TLParen  -> begin
         let toks = consume TLParen toks in
         let op = peek toks in
         match op with
