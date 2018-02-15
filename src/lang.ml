@@ -10,12 +10,7 @@ type exp =
   | ELeq      of exp * exp
   | EIf       of exp * exp * exp
 
-type op =
-  | OPlus
-  | OMinus
-  | OTimes
-  | ODivide
-  | OLeq
+type op = OPlus | OMinus | OTimes | ODivide | OLeq
 
 let string_of_exp (e:exp) : string =
   match e with
