@@ -52,12 +52,22 @@ and interpret_int_bin_op (o:op) (n1:int) (n2:int) : exp =
   | OPlus   -> EInt (n1 + n2)
   | OMinus  -> EInt (n1 - n2)
   | OTimes  -> EInt (n1 * n2)
-  | ODivide -> if n2 <> 0 then EInt (n1 / n2) else if n1 = 0 then ENan else failwith "Division by zero!"
+  | ODivide -> begin
+      match (n1, n2) with
+      | (0, 0) -> ENan
+      | (_, 0) -> failwith "Division by zero!"
+      | (_, _) -> EInt (n1 / n2)
+    end
   | OLeq    -> EBool (n1 <= n2)
 and interpret_float_bin_op (o:op) (f1:float) (f2:float) : exp =
   match o with
   | OPlus   -> EFloat (f1 +. f2)
   | OMinus  -> EFloat (f1 -. f2)
   | OTimes  -> EFloat (f1 *. f2)
-  | ODivide -> if f2 <> 0. then EFloat (f1 /. f2) else if f1 = 0. then ENan else failwith "Division by zero!"
+  | ODivide -> begin
+      match (f1, f2) with
+      | (0., 0.) -> ENan
+      | (_ , 0.) -> failwith "Division by zero!"
+      | (_ , _ ) -> EFloat (f1 /. f2)
+    end
   | OLeq    -> EBool (f1 <= f2)
