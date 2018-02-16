@@ -24,7 +24,7 @@ debug: all compiler.cma
 .FORCE:
 
 test: compiler.native
-	./run_test.sh
+	./runtest.sh
 
 clean:
 	$(OCB) -clean
