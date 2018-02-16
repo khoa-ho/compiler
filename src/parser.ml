@@ -2,7 +2,7 @@ open Lang
 open Lexer
 
 let rec peek : token list -> token = List.hd
-let rec advance : token list -> token list = List.tl
+let rec advance : token list -> token list = List.tl 
 
 let rec consume (t:token) (toks:token list) : token list =
   match toks with
