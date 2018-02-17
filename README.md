@@ -44,7 +44,7 @@ e ::= n | (+ e1 e2) | (- e1 e2) | (* e1 e2) | (/ e1 e2)
 
 Changelog
 ---------
-### [0.1] - 2018-02-02
+### [0.2] - 2018-02-17
 #### Added
 - A compiler, including a lexer, a parser, and an interpreter, supporting an arithmetic language (integers and floating points) with booleans and if-expression.
 - A test suite
