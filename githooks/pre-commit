@@ -51,10 +51,10 @@ exec git diff-index --check --cached $against --
 # Run extrinsic testing
 if [[  $(./runtest.sh) ]];
 then
-   	cat <<\EOF
-Error: Tests failed.
+  cat <<\EOF
+Error: Testing failed.
 
-Fix test cases to procced
+Need to pass all tests to commit.
 EOF
 	exit 1
 fi
