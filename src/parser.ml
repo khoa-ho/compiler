@@ -27,7 +27,7 @@ let rec parse (toks:token list) : (exp * token list) =
         let toks = consume TLParen toks in
         let op = peek toks in
         match op with
-        | (TPlus | TMinus | TTimes | TDivide | TLeq) ->
+        | TPlus | TMinus | TTimes | TDivide | TLeq ->
           let toks       = List.tl toks in
           let (e1, toks) = parse toks in
           let (e2, toks) = parse toks in
