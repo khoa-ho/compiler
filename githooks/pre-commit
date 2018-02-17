@@ -49,7 +49,7 @@ fi
 exec git diff-index --check --cached $against --
 
 # Run extrinsic testing
-if [[  $(./runtest.sh) ]];
+if [[ $(./runtest.sh) ]];
 then
   cat <<\EOF
 Error: Testing failed.
@@ -58,3 +58,6 @@ Need to pass all tests to commit.
 EOF
 	exit 1
 fi
+
+# Run extrinsic testing
+./runtest.sh || exit 1
