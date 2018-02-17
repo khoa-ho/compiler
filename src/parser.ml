@@ -22,32 +22,31 @@ let rec parse (toks:token list) : (exp * token list) =
     | TInt n   -> (EInt n, advance toks)
     | TFloat f -> (EFloat f, advance toks)
     | TBool b  -> (EBool b, advance toks)
-    | TLParen  -> begin
+    | TLParen  -> 
+      begin
         let toks = consume TLParen toks in
         let op = peek toks in
         match op with
         | (TPlus | TMinus | TTimes | TDivide | TLeq) ->
-          begin
-            let toks       = List.tl toks in
-            let (e1, toks) = parse toks in
-            let (e2, toks) = parse toks in
-            let toks       = consume TRParen toks in
+          let toks       = List.tl toks in
+          let (e1, toks) = parse toks in
+          let (e2, toks) = parse toks in
+          let e =  
             match op with
-            | TPlus   -> (EAdd      (e1, e2), toks)
-            | TMinus  -> (ESubtract (e1, e2), toks)
-            | TTimes  -> (EMultiply (e1, e2), toks)
-            | TDivide -> (EDivide   (e1, e2), toks)
-            | TLeq    -> (ELeq      (e1, e2), toks)
-            | _       -> failwith ""
-          end
+            | TPlus   -> (EAdd      (e1, e2))
+            | TMinus  -> (ESubtract (e1, e2))
+            | TTimes  -> (EMultiply (e1, e2))
+            | TDivide -> (EDivide   (e1, e2))
+            | TLeq    -> (ELeq      (e1, e2))
+            | _       -> failwith "" in
+          let toks       = consume TRParen toks in
+          (e, toks)
         | TIf ->
-          begin
-            let toks       = List.tl toks in
-            let (e1, toks) = parse toks in
-            let (e2, toks) = parse toks in
-            let (e3, toks) = parse toks in
-            (EIf (e1, e2, e3), toks)
-          end
+          let toks       = List.tl toks in
+          let (e1, toks) = parse toks in
+          let (e2, toks) = parse toks in
+          let (e3, toks) = parse toks in
+          (EIf (e1, e2, e3), toks)
         | _ -> 
           failwith (Printf.sprintf "%s is not a binary operator" (string_of_token op))
       end
