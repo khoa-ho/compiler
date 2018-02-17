@@ -20,6 +20,7 @@ let compile filename =
       Lang.string_of_exp e |> print_endline
     else
       Lang.interpret e |> Lang.string_of_exp |> print_endline
+
 let main () =
   let _ = cli () in
   List.iter compile !files
