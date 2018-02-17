@@ -28,7 +28,8 @@ let string_of_token (t:token) : string =
   | TIf      -> "if"
 
 let string_of_token_list (toks:token list) : string =
-  String.concat "," (List.map string_of_token toks)
+  let toks_str = String.concat ", " (List.map string_of_token toks) in
+  "[" ^ toks_str ^ "]"
 
 (* Peeks at the head of the stream without advancing it forward *)
 let peek (src:char Stream.t) : char =
