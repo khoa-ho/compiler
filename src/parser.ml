@@ -27,18 +27,18 @@ let rec parse (toks:token list) : (exp * token list) =
         let toks = consume TLParen toks in
         let op = peek toks in
         match op with
-        | TPlus | TMinus | TTimes | TDivide | TLeq ->
+        | TPlus | TMinus | TTimes | TDiv | TLeq ->
           let toks       = List.tl toks in
           let (e1, toks) = parse toks in
           let (e2, toks) = parse toks in
           let e =  
             match op with
-            | TPlus   -> (EAdd      (e1, e2))
-            | TMinus  -> (ESubtract (e1, e2))
-            | TTimes  -> (EMultiply (e1, e2))
-            | TDivide -> (EDivide   (e1, e2))
-            | TLeq    -> (ELeq      (e1, e2))
-            | _       -> failwith "" in
+            | TPlus  -> (EAdd (e1, e2))
+            | TMinus -> (ESub (e1, e2))
+            | TTimes -> (EMul (e1, e2))
+            | TDiv   -> (EDiv (e1, e2))
+            | TLeq   -> (ELeq (e1, e2))
+            | _      -> failwith "" in
           let toks       = consume TRParen toks in
           (e, toks)
         | TIf ->

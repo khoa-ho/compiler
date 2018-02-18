@@ -8,7 +8,7 @@ type token =
   | TPlus
   | TMinus
   | TTimes
-  | TDivide
+  | TDiv
   | TLeq
   | TIf
 
@@ -23,7 +23,7 @@ let string_of_token (t:token) : string =
   | TPlus    -> "+"
   | TMinus   -> "-"
   | TTimes   -> "*"
-  | TDivide  -> "/"
+  | TDiv     -> "/"
   | TLeq     -> "<="
   | TIf      -> "if"
 
@@ -99,7 +99,7 @@ let lex (src:char Stream.t) : token list =
       | '+' -> advance src; TPlus :: go ()
       | '-' -> advance src; TMinus :: go ()
       | '*' -> advance src; TTimes :: go ()
-      | '/' -> advance src; TDivide :: go ()
+      | '/' -> advance src; TDiv :: go ()
       | 'N' -> lex_string "NaN";   TNan :: go ()
       | '<' -> lex_string "<=";    TLeq :: go () 
       | 't' -> lex_string "true";  TBool true :: go ()
