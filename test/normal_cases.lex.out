@@ -1,32 +1,32 @@
-[2, +, 3, newline
-, 2, -, 3, newline
-, 2, *, 3, newline
-, 2, /, 3, newline
-, 2, <=, 3, newline
-, 3, <=, 2, newline
-, 2.1, +, 3.1, newline
-, 2.1, -, 3.1, newline
-, 2.1, *, 3.1, newline
-, 4.2, /, 2.1, newline
-, 2.1, <=, 3.1, newline
-, 3.1, <=, 2.1, newline
-, 2, +, 3.1, newline
-, 2.1, -, 3, newline
-, 2, *, 3.1, newline
-, 2.1, /, 3, newline
-, 2, <=, 3.1, newline
-, 3.1, <=, 2, newline
-, 2, +, 3, *, 4, /, 1, <=, 5, newline
-, true, newline
-, false, newline
-, if, true, then, 3, else, 4, newline
-, if, 4.6, <=, 3, then, if, 2, <=, 0.9, then, 2, else, 1, else, 124.9, newline
-, 0, /, 0, newline
-, 0, /, 0., newline
-, 0., /, 0, newline
-, 0., /, 0., newline
-, NaN, newline
-, NaN, +, 2, newline
-, if, NaN, then, 2, else, 3, newline
-, 4, +, -, 5, *, 2, newline
+[2, +, 3, EOL
+, 2, -, 3, EOL
+, 2, *, 3, EOL
+, 2, /, 3, EOL
+, 2, <=, 3, EOL
+, 3, <=, 2, EOL
+, 2.1, +, 3.1, EOL
+, 2.1, -, 3.1, EOL
+, 2.1, *, 3.1, EOL
+, 4.2, /, 2.1, EOL
+, 2.1, <=, 3.1, EOL
+, 3.1, <=, 2.1, EOL
+, 2, +, 3.1, EOL
+, 2.1, -, 3, EOL
+, 2, *, 3.1, EOL
+, 2.1, /, 3, EOL
+, 2, <=, 3.1, EOL
+, 3.1, <=, 2, EOL
+, 2, +, 3, *, 4, /, 1, <=, 5, EOL
+, true, EOL
+, false, EOL
+, if, true, then, 3, else, 4, EOL
+, if, 4.6, <=, 3, then, if, 2, <=, 0.9, then, 2, else, 1, else, 124.9, EOL
+, 0, /, 0, EOL
+, 0, /, 0., EOL
+, 0., /, 0, EOL
+, 0., /, 0., EOL
+, NaN, EOL
+, NaN, +, 2, EOL
+, if, NaN, then, 2, else, 3, EOL
+, 4, +, -, 5, *, 2, EOL
 ]
