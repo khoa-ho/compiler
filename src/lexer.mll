@@ -54,4 +54,4 @@ rule lex = parse
   | "then"         { TThen }
   | "else"         { TElse }
   | "EOF"          { TEOF }
-  | eof            { failwith "Unexpected end of file encountered" }
+  | eof            { failwith "Unexpected end of file encountered\nHint: Did you forget 'EOF' at the end of file?" }
