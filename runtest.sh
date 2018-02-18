@@ -1,40 +1,59 @@
 #!/bin/bash
 
 echo "Normal cases:"
-num_file=0
 
 for source_path in `ls test/*.src`; do
   source_file=$(basename $source_path)
-  test_name=${source_file%.*}
-  out_file=${source_path%.*}.out
+  testname=${source_file%.*}
+  outfile=${source_path%.*}.out
+  lexfile=${source_path%.*}.lex.out
+  parsefile=${source_path%.*}.parse.out  
 
-  if [ -e $out_file ]; then
-    if ! diff <(./compiler.native $source_path) $out_file; then
-      >&2 echo "Failed test '${test_name}'!"
+  if [ -e $outfile ]; then
+    if ! diff <(./compiler.native $source_path) $outfile; then
+      >&2 echo "Failed test '${testname}'!"
       exit 1
     fi
   else
-    >&2 echo "Can't find '${out_file
-}'"
+    >&2 echo "Can't find '${outfile}'"
     exit 1
   fi
-  let num_file++
-done
-echo "${num_file} tests passed!"
 
-
-echo "Error cases:"
-num_file=0
-
-for source_path in `ls test/*.err`; do
-  source_file=$(basename $source_path)
-  test_name=${source_file%.*}
-
-  ./compiler.native $source_path &> /dev/null
-  if [ $? == 0 ]; then
-    >&2 echo "Failed test '${test_name}'!"
+    if [ -e $lexfile ]; then
+    if ! diff <(./compiler.native -lex $source_path) $lexfile; then
+      >&2 echo "Failed test '${testname}'!"
+      exit 1
+    fi
+  else
+    >&2 echo "Can't find '${lexfile}'"
     exit 1
   fi
-  let num_file++
+
+    if [ -e $parsefile ]; then
+    if ! diff <(./compiler.native -parse $source_path) $parsefile; then
+      >&2 echo "Failed test '${testname}'!"
+      exit 1
+    fi
+  else
+    >&2 echo "Can't find '${parse}'"
+    exit 1
+  fi
 done
-echo "${num_file} tests passed!"
+echo "All tests passed!"
+
+
+# echo "Error cases:"
+# num_file=0
+
+# for source_path in `ls test/*.err`; do
+#   source_file=$(basename $source_path)
+#   testname=${source_file%.*}
+
+#   ./compiler.native $source_path &> /dev/null
+#   if [ $? != 2 ]; then
+#     >&2 echo "Failed test '${testname}'!"
+#     exit 1
+#   fi
+#   let num_file++
+# done
+# echo "${num_file} tests passed!"

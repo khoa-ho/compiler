@@ -10,14 +10,14 @@ type exp =
   | ELeq   of exp * exp
   | EIf    of exp * exp * exp
 
-type op = OPlus | OMinus | OTimes | ODivide | OLeq
+type op = OPlus | OMinus | OTimes | ODiv | OLeq
 
 let operator_of_exp (e:exp) : op * string =
   match e with
-  | EAdd (_, _) -> (OPlus, "+")
+  | EAdd (_, _) -> (OPlus,"+")
   | ESub (_, _) -> (OMinus, "-")
   | EMul (_, _) -> (OTimes, "*")
-  | EDiv (_, _) -> (ODivide, "/")
+  | EDiv (_, _) -> (ODiv, "/")
   | ELeq (_, _) -> (OLeq, "<=")
   | _           -> failwith "Expected an expression with a binary operator"
 let rec interpret (e:exp) : exp =
@@ -34,7 +34,8 @@ and interpret_if (e1:exp) (e2:exp) (e3:exp) : exp =
   | EBool b          -> if b then interpret e2 else interpret e3
   | ELeq (_, _) as e -> interpret (EIf ((interpret e), e2, e3))
   | _  ->
-    failwith "Expected a boolean for the 1st sub-expression of 'if'-expression, instead got a numeric expression"
+    failwith 
+      "Expected a boolean for the 1st sub-expr of 'if'-expr, got a numeric expr"
 and interpret_bin_op (e:exp) (e1:exp) (e2:exp) : exp =
   let (o, _) = operator_of_exp e in
   let v1 = interpret e1 in
@@ -46,28 +47,29 @@ and interpret_bin_op (e:exp) (e1:exp) (e2:exp) : exp =
   | (EFloat f1, EInt n2)   -> interpret_float_bin_op o f1 (float_of_int n2)
   | (EFloat f1, EFloat f2) -> interpret_float_bin_op o f1 f2
   | _                      ->
-    failwith "Expected 2 numeric sub-expressions for a binary expression, instead got 1 or 2 boolean sub-expression"
+    failwith 
+      "Expected 2 numeric sub-exprs for a binary expr, got 1 or 2 boolean sub-expr"
 and interpret_int_bin_op (o:op) (n1:int) (n2:int) : exp =
   match o with
-  | OPlus   -> EInt (n1 + n2)
-  | OMinus  -> EInt (n1 - n2)
-  | OTimes  -> EInt (n1 * n2)
-  | ODivide -> begin
+  | OPlus  -> EInt (n1 + n2)
+  | OMinus -> EInt (n1 - n2)
+  | OTimes -> EInt (n1 * n2)
+  | ODiv   -> begin
       match (n1, n2) with
       | (0, 0) -> ENan
-      | (_, 0) -> failwith "Division by zero!"
+      | (_, 0) -> failwith "Division by zero!" |> ignore; exit 0
       | (_, _) -> EInt (n1 / n2)
     end
   | OLeq    -> EBool (n1 <= n2)
 and interpret_float_bin_op (o:op) (f1:float) (f2:float) : exp =
   match o with
-  | OPlus   -> EFloat (f1 +. f2)
-  | OMinus  -> EFloat (f1 -. f2)
-  | OTimes  -> EFloat (f1 *. f2)
-  | ODivide -> begin
+  | OPlus  -> EFloat (f1 +. f2)
+  | OMinus -> EFloat (f1 -. f2)
+  | OTimes -> EFloat (f1 *. f2)
+  | ODiv   -> begin
       match (f1, f2) with
       | (0., 0.) -> ENan
-      | (_ , 0.) -> failwith "Division by zero!"
+      | (_ , 0.) -> raise Division_by_zero
       | (_ , _ ) -> EFloat (f1 /. f2)
     end
   | OLeq    -> EBool (f1 <= f2)
@@ -84,7 +86,7 @@ and string_of_bin_exp (e:exp) (e1:exp) (e2:exp) : string =
   let (_, op_str) = operator_of_exp e in
   String.concat " " ["(" ^ op_str; (string_of_exp e1); (string_of_exp e2)^ ")"] 
 and string_of_if (e1:exp) (e2:exp) (e3:exp) : string =
-  String.concat " " ["(if"; (string_of_exp e1); (string_of_exp e2); (string_of_exp e3)^ ")"] 
+  String.concat " " ["(if"; (string_of_exp e1); "then"; (string_of_exp e2); "else"; (string_of_exp e3)^ ")"] 
 and string_of_terminal_exp (e:exp) : string =
   match e with
   | ENan     -> "NaN"
