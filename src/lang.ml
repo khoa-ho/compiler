@@ -22,8 +22,7 @@ let operator_of_exp (e:exp) : op * string =
   | _           -> failwith "Expected an expression with a binary operator"
 
 let error err_msg =
-  print_endline ("Error: " ^ err_msg);
-  exit 1
+  Printf.fprintf stderr "Error: %s\n" err_msg; exit 1
 
 let rec interpret (e:exp) : exp =
   match e with

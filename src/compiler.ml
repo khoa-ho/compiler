@@ -28,6 +28,6 @@ let compile filename =
 
 let main () =
   let _ = cli () in
-  List.iter compile !files
+  List.iter compile (List.rev !files)
 
 let _ = if !Sys.interactive then () else main ()
