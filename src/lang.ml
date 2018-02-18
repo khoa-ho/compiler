@@ -20,6 +20,11 @@ let operator_of_exp (e:exp) : op * string =
   | EDiv (_, _) -> (ODiv, "/")
   | ELeq (_, _) -> (OLeq, "<=")
   | _           -> failwith "Expected an expression with a binary operator"
+
+let error err_msg =
+  print_endline ("Error: " ^ err_msg);
+  exit 1
+
 let rec interpret (e:exp) : exp =
   match e with
   | EAdd (e1, e2) | ESub (e1, e2) 
@@ -34,8 +39,7 @@ and interpret_if (e1:exp) (e2:exp) (e3:exp) : exp =
   | EBool b          -> if b then interpret e2 else interpret e3
   | ELeq (_, _) as e -> interpret (EIf ((interpret e), e2, e3))
   | _  ->
-    failwith 
-      "Expected a boolean for the 1st sub-expr of 'if'-expr, got a numeric expr"
+    error "Expected a boolean for the 1st sub-expr of 'if'-expr, got a numeric expr"
 and interpret_bin_op (e:exp) (e1:exp) (e2:exp) : exp =
   let (o, _) = operator_of_exp e in
   let v1 = interpret e1 in
@@ -47,8 +51,8 @@ and interpret_bin_op (e:exp) (e1:exp) (e2:exp) : exp =
   | (EFloat f1, EInt n2)   -> interpret_float_bin_op o f1 (float_of_int n2)
   | (EFloat f1, EFloat f2) -> interpret_float_bin_op o f1 f2
   | _                      ->
-    failwith 
-      "Expected 2 numeric sub-exprs for a binary expr, got 1 or 2 boolean sub-expr"
+    error "Expected 2 numeric sub-exprs for a binary expr, got 1 or 2 boolean sub-expr"
+
 and interpret_int_bin_op (o:op) (n1:int) (n2:int) : exp =
   match o with
   | OPlus  -> EInt (n1 + n2)
@@ -57,7 +61,7 @@ and interpret_int_bin_op (o:op) (n1:int) (n2:int) : exp =
   | ODiv   -> begin
       match (n1, n2) with
       | (0, 0) -> ENan
-      | (_, 0) -> failwith "Division by zero!" |> ignore; exit 0
+      | (_, 0) -> error "Division by zero!"
       | (_, _) -> EInt (n1 / n2)
     end
   | OLeq    -> EBool (n1 <= n2)
@@ -69,7 +73,7 @@ and interpret_float_bin_op (o:op) (f1:float) (f2:float) : exp =
   | ODiv   -> begin
       match (f1, f2) with
       | (0., 0.) -> ENan
-      | (_ , 0.) -> raise Division_by_zero
+      | (_ , 0.) -> error "Division by zero!"
       | (_ , _ ) -> EFloat (f1 /. f2)
     end
   | OLeq    -> EBool (f1 <= f2)

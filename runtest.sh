@@ -42,18 +42,16 @@ done
 echo "All tests passed!"
 
 
-# echo "Error cases:"
-# num_file=0
+echo "Error cases:"
 
-# for source_path in `ls test/*.err`; do
-#   source_file=$(basename $source_path)
-#   testname=${source_file%.*}
+for source_path in `ls test/*.err`; do
+  source_file=$(basename $source_path)
+  testname=${source_file%.*}
 
-#   ./compiler.native $source_path &> /dev/null
-#   if [ $? != 2 ]; then
-#     >&2 echo "Failed test '${testname}'!"
-#     exit 1
-#   fi
-#   let num_file++
-# done
-# echo "${num_file} tests passed!"
+  ./compiler.native $source_path &> /dev/null
+  if [ $? != 1 ]; then
+    >&2 echo "Failed to handle '${testname}' error properly!"
+    exit 1
+  fi
+done
+echo "All tests passed!"
