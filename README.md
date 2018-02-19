@@ -46,7 +46,7 @@ Changelog
 ---------
 ### [0.3] - 2018-02-18
 #### Added
-- A simple CLI with some flags. When the -lex flag is passed, the compiler should process the input source file through the lexing phase, print the resulting stream of tokens to the console, and the exit. When the -parse flag is passed, the compiler process the input source file through the parsing phase, print the resulting abstract syntax tree, and then exit. By default, the compiler will run through the complete
+- A simple CLI with some flags. When the `-lex` flag is passed, the compiler should process the input source file through the lexing phase, print the resulting stream of tokens to the console, and the exit. When the `-parse` flag is passed, the compiler process the input source file through the parsing phase, print the resulting abstract syntax tree, and then exit. By default, the compiler will run through the complete
 - A suite of tests for both the lexing and parsing phases. To add custom tests that work with `make clean`, source files, expected interpreting output, expected lexing output, and expected parsing output files need to have `.src`, `.out`, `.lex.out`, and `.parse.out`, respectively
 - Can now compile multiple files at once. Use `$ ./compiler.native [filepath1] [filepath2] ...`
 - Each source file can have multiple statements. Each statement is an expression ended with a newline character. Right after the last statement, a token `EOF` needs to be added to signal end-of-file.
