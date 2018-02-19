@@ -34,16 +34,33 @@ Then run the compiler,
 
 `$ ./compiler.native [source_file_path]`
 
-Currently, the language supports the following grammar
+Currently, the language supports the following grammar:
 
 ```
-e ::= n | (+ e1 e2) | (- e1 e2) | (* e1 e2) | (/ e1 e2)
-    | true | false | (<= e1 e2) | (if e1 e2 e3)
+e ::= n | (e1 + e2) | (e1 - e2) | (e1 + e2) | (e1 + e2)
+    | true | false | (e1 + e2) | (if e1 then e2 else e3)
     | f | NaN
 ```  
 
 Changelog
 ---------
+### [0.3] - 2018-02-18
+#### Added
+- A simple CLI with some flags. When the -lex flag is passed, the compiler should process the input source file through the lexing phase, print the resulting stream of tokens to the console, and the exit. When the -parse flag is passed, the compiler process the input source file through the parsing phase, print the resulting abstract syntax tree, and then exit. By default, the compiler will run through the complete
+- A suite of tests for both the lexing and parsing phases. To add custom tests that work with `make clean`, source files, expected interpreting output, expected lexing output, and expected parsing output files need to have `.src`, `.out`, `.lex.out`, and `.parse.out`, respectively
+- Can now compile multiple files at once. Use `$ ./compiler.native [filepath1] [filepath2] ...`
+- Each source file can have multiple statements. Each statement is an expression ended with a newline character. Right after the last statement, a token `EOF` needs to be added to signal end-of-file.
+- Error reporting at the lexing stage now includes the line and character number
+#### Changed
+- Integrated OCamllex (lexer generator) and Menhir (parser generator) instead of manually lexing and parsing
+- Binary operations now have infix syntax instead of S-expression syntax. Following are the operators, and their associativity, from lowest to highest precedence level:
+    * `<=`: non-associative
+    * `+`, `-`: left-associative
+    * `*`, '/`: left-associative
+    * `-` (in front of an integer or float): non-associative
+#### Known bugs
+- All previous known bugs have been fixed.
+
 ### [0.2] - 2018-02-17
 #### Added
 - A compiler, including a lexer, a parser, and an interpreter, supporting an arithmetic language (integers and floating points) with booleans and if-expression.
