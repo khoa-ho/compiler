@@ -2,13 +2,16 @@
 %token <int> TInt
 %token <float> TFloat
 %token <bool> TBool
+%token <string> TVar
 %token TPlus TMinus TTimes TDiv TLeq
 %token TLParen TRParen
 %token TIf TThen TElse
+%token TLet TAsgn TIn 
 %token TEOL TEOF
 
-%nonassoc TElse          /* lowest precedence */
-%left TLeq
+%nonassoc TIn
+%nonassoc TElse  
+%nonassoc TLeq
 %left TPlus TMinus       
 %left TTimes TDiv
 
@@ -18,22 +21,26 @@
 %%
 parse:
   | stmt = statement TEOF      { [stmt] }
-  | stmt = statement m = parse { stmt :: m}
+  | stmt = statement m = parse { stmt :: m }
 
 statement:
-  | expr = e TEOL              { expr }
+  | e = expr TEOL              { e }
 
-e:
+expr:
   | TNan                       { ENan }
-  | TInt                       { EInt $1 }
-  | TFloat                     { EFloat $1 }
-  | TBool                      { EBool $1 }
-  | TLParen e TRParen          { $2 }
-  | TMinus TFloat              { EFloat (-. $2) }
-  | TMinus TInt                { EInt (- $2) }
-  | e TPlus e                  { EAdd ($1, $3) }
-  | e TMinus e                 { ESub ($1, $3) }
-  | e TTimes e                 { EMul ($1, $3) }
-  | e TDiv e                   { EDiv ($1, $3) }
-  | e TLeq e                   { ELeq ($1, $3) }
-  | TIf e TThen e TElse e      { EIf ($2, $4, $6) }
+  | i = TInt                   { EInt i }
+  | f = TFloat                 { EFloat f }
+  | b = TBool                  { EBool b }
+  | TLParen e = expr TRParen   { e }
+  | TMinus f = TFloat          { EFloat (-. f) }
+  | TMinus i = TInt            { EInt (- i) }
+  | e1 = expr TPlus e2 = expr  { EBop (OPlus, e1, e2) }
+  | e1 = expr TMinus e2 = expr { EBop (OMinus, e1, e2) }
+  | e1 = expr TTimes e2 = expr { EBop (OTimes, e1, e2) }
+  | e1 = expr TDiv e2 = expr   { EBop (ODiv, e1, e2) }
+  | e1 = expr TLeq e2 = expr   { EBop (OLeq, e1, e2) }
+  | TIf e1 = expr TThen e2 = expr TElse e3 = expr      
+    { EIf (e1, e2, e3) }
+  | TLet x = TVar TAsgn v = expr TIn e = expr
+    { ELet (x, v, e) }
+  | x = TVar                   { EVar x }

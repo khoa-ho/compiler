@@ -8,6 +8,7 @@ let string_of_token (t:token) : string =
   | TInt n   -> string_of_int n
   | TFloat f -> string_of_float f
   | TBool b  -> string_of_bool b
+  | TVar x   -> x
   | TLParen  -> "("
   | TRParen  -> ")"
   | TPlus    -> "+"
@@ -18,6 +19,9 @@ let string_of_token (t:token) : string =
   | TIf      -> "if"
   | TThen    -> "then"
   | TElse    -> "else"
+  | TLet     -> "let"
+  | TAsgn    -> "="
+  | TIn      -> "in"
   | TEOL     -> "EOL\n"
   | TEOF     -> "EOF"
 
@@ -37,7 +41,7 @@ let next_line lexbuf =
 let position lexbuf =
   let pos = lexbuf.lex_curr_p in
   Printf.sprintf " at line %d, character %d" 
-  pos.pos_lnum (pos.pos_cnum - pos.pos_bol + 1)
+  pos.pos_lnum (pos.pos_cnum - pos.pos_bol)
 }
 
 let digit = ['0'-'9']
@@ -49,6 +53,9 @@ let boolean = "true" | "false"
 
 let white = [' ' '\t']+
 let newline = '\r' | '\n' | "\r\n"
+
+let var_name = ['a'-'z' 'A'-'Z' '_'] ['a'-'z' 'A'-'Z' '0'-'9' '_']*
+let var = '$' var_name
 
 rule lex = parse
   | white    { lex lexbuf }
@@ -67,6 +74,10 @@ rule lex = parse
   | "if"     { TIf }
   | "then"   { TThen }
   | "else"   { TElse }
+  | "let"    { TLet }
+  | var      { let var = lexeme lexbuf in TVar (String.sub var 1 (String.length var - 1)) }
+  | '='      { TAsgn }
+  | "in"     { TIn }
   | "EOF"    { TEOF }
   | _        { raise (SyntaxError ("Unexpected char: " ^ lexeme lexbuf ^ (position lexbuf))) }
   | eof      { failwith "Unexpected end of file encountered\nHint: Did you forget 'EOF' at the end of file?" }

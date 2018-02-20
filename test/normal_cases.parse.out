@@ -29,3 +29,5 @@ NaN
 (+ NaN 2)
 (if NaN then 2 else 3)
 (+ 4 (* -5 2))
+(let x = (+ 2 3) in (<= x 10))
+(let y = 10 in (let y = 1 in (+ y y)))

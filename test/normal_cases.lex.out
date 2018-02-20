@@ -29,4 +29,6 @@
 , NaN, +, 2, EOL
 , if, NaN, then, 2, else, 3, EOL
 , 4, +, -, 5, *, 2, EOL
+, let, x, =, 2, +, 3, in, x, <=, 10, EOL
+, let, y, =, 10, in, let, y, =, 1, in, y, +, y, EOL
 ]
