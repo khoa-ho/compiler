@@ -6,7 +6,8 @@
 %token TPlus TMinus TTimes TDiv TLeq
 %token TLParen TRParen
 %token TIf TThen TElse
-%token TLet TAsgn TIn
+%token <string> TLet 
+%token TIn
 %token TFunc TArrow
 %token TSColon EOF
 
@@ -44,7 +45,7 @@ expr:
     { EFapp (e1, e2) }
   | TIf e1 = expr TThen e2 = expr TElse e3 = expr      
     { EIf (e1, e2, e3) }
-  | TLet x = TVar TAsgn e1 = expr TIn e2 = expr
+  | x = TLet e1 = expr TIn e2 = expr
     { ELet (x, e1, e2) }
   | TFunc x = TVar TArrow e = expr
     { EFunc (x, e) }

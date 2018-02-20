@@ -1,1 +1,1 @@
-let $x = 3 in $y;
+let x = 3 in y;

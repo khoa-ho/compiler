@@ -19,12 +19,11 @@ let string_of_token (t:token) : string =
   | TIf      -> "if"
   | TThen    -> "then"
   | TElse    -> "else"
-  | TLet     -> "let"
-  | TAsgn    -> "="
+  | TLet x   -> Printf.sprintf "let %s =" x
   | TIn      -> "in"
   | TFunc    -> "fun"
   | TArrow   -> "->"
-  | TSColon  -> ";"
+  | TSColon  -> ";\n"
   | EOF      -> "EOF"
 
 let string_of_token_list (toks:token list) : string =
@@ -44,6 +43,10 @@ let position lexbuf =
   let pos = lexbuf.lex_curr_p in
   Printf.sprintf " at line %d, character %d" 
   pos.pos_lnum (pos.pos_cnum - pos.pos_bol)
+
+let lex_let_id lexbuf : string =
+  let str = lexeme lexbuf in 
+  String.sub str 3 (String.length str - 4) |> String.trim
 }
 
 let digit = ['0'-'9']
@@ -55,11 +58,15 @@ let boolean = "true" | "false"
 
 let white = [' ' '\t']+
 let newline = '\r' | '\n' | "\r\n"
+let blank = white | newline
 
-let var_name = ['a'-'z' 'A'-'Z' '_'] ['a'-'z' 'A'-'Z' '0'-'9' '_']*
-let var = '$' var_name
+let alpha = ['a'-'z' 'A'-'Z']
+let var = alpha ['a'-'z' 'A'-'Z' '0'-'9' '_']*
 
-rule lex = parse
+let let_bind = "let" blank var blank '='
+
+rule lex = 
+  parse
   | "NaN"    { TNan }
   | int      { TInt (int_of_string (lexeme lexbuf)) }
   | float    { TFloat (float_of_string (lexeme lexbuf)) }
@@ -74,14 +81,14 @@ rule lex = parse
   | "if"     { TIf }
   | "then"   { TThen }
   | "else"   { TElse }
-  | "let"    { TLet }
-  | var      { let var = lexeme lexbuf in TVar (String.sub var 1 (String.length var - 1)) }
-  | '='      { TAsgn }
+  | let_bind { TLet (lex_let_id lexbuf) }
   | "in"     { TIn }
   | "fun"    { TFunc }
   | "->"     { TArrow }
+  | var      { TVar (lexeme lexbuf) }
   | ";"      { TSColon }
   | white    { lex lexbuf }
   | newline  { next_line lexbuf; lex lexbuf }
   | _        { raise (SyntaxError ("Unexpected char: " ^ lexeme lexbuf ^ (position lexbuf))) }
   | eof      { EOF }
+
