@@ -22,6 +22,8 @@ let string_of_token (t:token) : string =
   | TLet     -> "let"
   | TAsgn    -> "="
   | TIn      -> "in"
+  | TFunc    -> "fun"
+  | TArrow   -> "->"
   | TEOL     -> "EOL\n"
   | TEOF     -> "EOF"
 
@@ -78,6 +80,8 @@ rule lex = parse
   | var      { let var = lexeme lexbuf in TVar (String.sub var 1 (String.length var - 1)) }
   | '='      { TAsgn }
   | "in"     { TIn }
+  | "fun"    { TFunc }
+  | "->"     { TArrow }
   | "EOF"    { TEOF }
   | _        { raise (SyntaxError ("Unexpected char: " ^ lexeme lexbuf ^ (position lexbuf))) }
   | eof      { failwith "Unexpected end of file encountered\nHint: Did you forget 'EOF' at the end of file?" }
