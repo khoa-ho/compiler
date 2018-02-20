@@ -12,6 +12,7 @@ let cli () =
 
 let compile filename =
   let lexbuf = (Lexing.from_channel (open_in filename)) in
+  let _ = Lexer.curr_file lexbuf filename in
   if !is_lexing then
     let rec lexing toks =
       let token = Lexer.lex lexbuf in

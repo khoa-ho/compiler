@@ -56,6 +56,14 @@ and string_of_terminal_exp (e:exp) : string =
   | EVar x   -> x
   | _ -> failwith (sprintf "Expected a terminal expr for 'string_of_terminal_exp', got %s" (string_of_exp e))
 
+let is_value (e:exp) : bool =
+  match e with
+  | ENan 
+  | EInt _ | EFloat _ | EBool _ 
+  | EFunc (_, _) | EFix (_, _, _) -> true
+  | _                             -> false
+
+
 let rec subst (v:exp) (x:string) (e:exp) : exp =
   let sub expr = subst v x expr in
   match e with

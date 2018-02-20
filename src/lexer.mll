@@ -34,6 +34,14 @@ let string_of_token_list (toks:token list) : string =
 
 exception SyntaxError of string
 
+let curr_file lexbuf fname =
+  let pos = lexbuf.lex_start_p in
+  lexbuf.lex_curr_p <-
+    { pos with pos_fname = fname;
+               pos_bol = lexbuf.lex_curr_pos;
+               pos_lnum = pos.pos_lnum
+    }
+
 let next_line lexbuf =
   let pos = lexbuf.lex_curr_p in
   lexbuf.lex_curr_p <-
@@ -43,8 +51,8 @@ let next_line lexbuf =
 
 let position lexbuf =
   let pos = lexbuf.lex_curr_p in
-  Printf.sprintf " at line %d, character %d" 
-  pos.pos_lnum (pos.pos_cnum - pos.pos_bol)
+  Printf.sprintf "in file '%s', line %d, character %d" 
+  pos.pos_fname pos.pos_lnum (pos.pos_cnum - pos.pos_bol)
 }
 
 let digit = ['0'-'9']
@@ -87,6 +95,5 @@ rule lex =
   | ";"      { TSColon }
   | white    { lex lexbuf }
   | newline  { next_line lexbuf; lex lexbuf }
-  | _        { raise (SyntaxError ("Unexpected char: " ^ lexeme lexbuf ^ (position lexbuf))) }
+  | _        { raise (SyntaxError (Printf.sprintf "Unexpected char '%s' %s" (lexeme lexbuf) (position lexbuf))) }
   | eof      { EOF }
-
