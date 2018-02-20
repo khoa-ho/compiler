@@ -8,7 +8,7 @@
 %token TIf TThen TElse
 %token TLet TAsgn TIn
 %token TFunc TArrow
-%token TEOL TEOF
+%token TSColon EOF
 
 %nonassoc TElse TIn TArrow  
 %nonassoc TLeq
@@ -21,11 +21,11 @@
 
 %%
 parse:
-  | stmt = statement TEOF      { [stmt] }
+  | stmt = statement EOF       { [stmt] }
   | stmt = statement m = parse { stmt :: m }
 
 statement:
-  | e = expr TEOL              { e }
+  | e = expr TSColon           { e }
 
 expr:
   | TNan                       { ENan }

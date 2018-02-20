@@ -24,8 +24,8 @@ let string_of_token (t:token) : string =
   | TIn      -> "in"
   | TFunc    -> "fun"
   | TArrow   -> "->"
-  | TEOL     -> "EOL\n"
-  | TEOF     -> "EOF"
+  | TSColon  -> ";"
+  | EOF      -> "EOF"
 
 let string_of_token_list (toks:token list) : string =
   let toks_str = String.concat ", " (List.rev (List.map string_of_token toks)) in
@@ -60,8 +60,6 @@ let var_name = ['a'-'z' 'A'-'Z' '_'] ['a'-'z' 'A'-'Z' '0'-'9' '_']*
 let var = '$' var_name
 
 rule lex = parse
-  | white    { lex lexbuf }
-  | newline  { next_line lexbuf; TEOL }
   | "NaN"    { TNan }
   | int      { TInt (int_of_string (lexeme lexbuf)) }
   | float    { TFloat (float_of_string (lexeme lexbuf)) }
@@ -82,6 +80,8 @@ rule lex = parse
   | "in"     { TIn }
   | "fun"    { TFunc }
   | "->"     { TArrow }
-  | "EOF"    { TEOF }
+  | ";"      { TSColon }
+  | white    { lex lexbuf }
+  | newline  { next_line lexbuf; lex lexbuf }
   | _        { raise (SyntaxError ("Unexpected char: " ^ lexeme lexbuf ^ (position lexbuf))) }
-  | eof      { failwith "Unexpected end of file encountered\nHint: Did you forget 'EOF' at the end of file?" }
+  | eof      { EOF }

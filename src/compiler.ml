@@ -16,7 +16,7 @@ let compile filename =
     let rec lexing toks =
       let token = Lexer.lex lexbuf in
       match token with
-      | Parser.TEOF -> toks |> Lexer.string_of_token_list |> print_endline
+      | Parser.EOF -> toks |> Lexer.string_of_token_list |> print_endline
       | _ -> lexing (token :: toks)
     in lexing []
   else 

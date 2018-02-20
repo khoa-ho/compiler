@@ -1,2 +1,1 @@
-if 5 then 2 else 3
-EOF
+if 5 then 2 else 3;
