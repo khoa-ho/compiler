@@ -19,7 +19,8 @@ let string_of_token (t:token) : string =
   | TIf      -> "if"
   | TThen    -> "then"
   | TElse    -> "else"
-  | TLet x   -> Printf.sprintf "let %s =" x
+  | TLet     -> "let"
+  | TAsgn    -> "="
   | TIn      -> "in"
   | TFunc    -> "fun"
   | TArrow   -> "->"
@@ -43,10 +44,6 @@ let position lexbuf =
   let pos = lexbuf.lex_curr_p in
   Printf.sprintf " at line %d, character %d" 
   pos.pos_lnum (pos.pos_cnum - pos.pos_bol)
-
-let lex_let_id lexbuf : string =
-  let str = lexeme lexbuf in 
-  String.sub str 3 (String.length str - 4) |> String.trim
 }
 
 let digit = ['0'-'9']
@@ -62,8 +59,6 @@ let blank = white | newline
 
 let alpha = ['a'-'z' 'A'-'Z']
 let var = alpha ['a'-'z' 'A'-'Z' '0'-'9' '_']*
-
-let let_bind = "let" blank var blank '='
 
 rule lex = 
   parse
@@ -81,7 +76,8 @@ rule lex =
   | "if"     { TIf }
   | "then"   { TThen }
   | "else"   { TElse }
-  | let_bind { TLet (lex_let_id lexbuf) }
+  | "let"    { TLet }
+  | '='      { TAsgn }
   | "in"     { TIn }
   | "fun"    { TFunc }
   | "->"     { TArrow }
