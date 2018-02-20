@@ -12,6 +12,7 @@ type exp =
   | EVar   of string
   | ELet   of string * exp * exp
   | EFunc  of string * exp
+  | EFix   of string * string * exp
   | EFapp  of exp * exp
 
 let error err_msg =
@@ -23,6 +24,7 @@ let rec string_of_exp (e:exp) : string =
   | EIf (e1, e2, e3) -> string_of_if e1 e2 e3
   | ELet (x, v, e')  -> string_of_let x v e'
   | EFunc (x, e')    -> string_of_func x e'
+  | EFix (f, x, e')  -> string_of_fix f x e'
   | EFapp (e1, e2)   -> string_of_func_app e1 e2
   | _ as e'          -> string_of_terminal_exp e'
 and string_of_bin_exp (o:bop) (e1:exp) (e2:exp) : string =
@@ -33,7 +35,9 @@ and string_of_if (e1:exp) (e2:exp) (e3:exp) : string =
 and string_of_let (x:string) (e1:exp) (e2:exp) : string =
   sprintf "(let %s = %s in %s)" x (string_of_exp e1) (string_of_exp e2)
 and string_of_func (x:string) (e:exp) =
-  sprintf "(fun %s -> %s)" x (string_of_exp e) 
+  sprintf "(fun %s -> %s)" x (string_of_exp e)
+and string_of_fix (f:string) (x:string) (e:exp) =
+  sprintf "(fix %s %s -> %s)" f x (string_of_exp e)
 and string_of_func_app (e1:exp) (e2:exp) =
   sprintf "(%s (%s))" (string_of_exp e1) (string_of_exp e2)
 and string_of_bop (o:bop) : string =
@@ -55,13 +59,14 @@ and string_of_terminal_exp (e:exp) : string =
 let rec subst (v:exp) (x:string) (e:exp) : exp =
   let sub expr = subst v x expr in
   match e with
-  | EBop (o, e1, e2)               -> EBop (o, sub e1, sub e2)
-  | EIf (e1, e2, e3)               -> EIf (sub e1, sub e2, sub e3)
-  | ELet (x', e1, e2) when x' <> x -> ELet (x', sub e1, sub e2)
-  | EFunc (x', e') when x' <> x    -> EFunc (x', sub e')
-  | EFapp (e1, e2)                 -> EFapp (sub e1, sub e2)
-  | EVar x' when x' = x            -> v
-  | _ as non_var                   -> non_var
+  | EBop (o, e1, e2)                        -> EBop (o, sub e1, sub e2)
+  | EIf (e1, e2, e3)                        -> EIf (sub e1, sub e2, sub e3)
+  | EFapp (e1, e2)                          -> EFapp (sub e1, sub e2)
+  | ELet (x', e1, e2) when x <> x'          -> ELet (x', sub e1, sub e2)
+  | EFunc (x', e') when x <> x'             -> EFunc (x', sub e')
+  | EFix (f, x', e') when x <> x' && x <> f -> EFunc (x', sub e')
+  | EVar x' when x = x'                     -> v
+  | _ as non_var                            -> non_var
 
 let rec interpret (e:exp) : exp =
   match e with
@@ -87,15 +92,16 @@ and interpret_if (e1:exp) (e2:exp) (e3:exp) : exp =
   | ENan                   -> ENan
   | EBool b                -> if b then interpret e2 else interpret e3
   | EBop (OLeq, _, _) as e -> interpret (EIf ((interpret e), e2, e3))
-  | _ ->  error (sprintf "Expected a boolean expr for the 1st sub-expr of 'if'-expr, got %s" (string_of_exp e1))
+  | _ -> error (sprintf "Expected a boolean expr for the 1st sub-expr of 'if'-expr, got %s" (string_of_exp e1))
 and interpret_let (x:string) (e1:exp) (e2:exp) =
   let v1 = interpret e1 in interpret (subst v1 x e2)
 and interpret_func_app (e1:exp) (e2:exp) : exp =
   let f = interpret e1 in
   let v2 = interpret e2 in
   match f with
-  | EFunc (x, e3) -> interpret (subst v2 x e3)
-  | _             -> error (sprintf "Expected a function, got %s" (string_of_exp e1)) 
+  | EFunc (x, e3)             -> interpret (subst v2 x e3)
+  | EFix (f, x, e3) as itself -> interpret (subst itself f (subst v2 x e3))
+  | _ -> error (sprintf "Expected a function, got %s" (string_of_exp e1)) 
 and interpret_int_bin_exp (o:bop) (n1:int) (n2:int) : exp =
   match o with
   | OPlus  -> EInt (n1 + n2)
@@ -120,4 +126,3 @@ and interpret_float_bin_exp (o:bop) (f1:float) (f2:float) : exp =
       | (_ , _ ) -> EFloat (f1 /. f2)
     end
   | OLeq    -> EBool (f1 <= f2)
-

@@ -22,6 +22,7 @@ let string_of_token (t:token) : string =
   | TLet     -> "let"
   | TAsgn    -> "="
   | TIn      -> "in"
+  | TFix     -> "fix"
   | TFunc    -> "fun"
   | TArrow   -> "->"
   | TSColon  -> ";\n"
@@ -79,6 +80,7 @@ rule lex =
   | "let"    { TLet }
   | '='      { TAsgn }
   | "in"     { TIn }
+  | "fix"    { TFix }
   | "fun"    { TFunc }
   | "->"     { TArrow }
   | var      { TVar (lexeme lexbuf) }

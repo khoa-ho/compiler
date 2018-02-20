@@ -37,3 +37,5 @@ true
 false
 4
 (fun y -> (/ 8 y))
+5
+120

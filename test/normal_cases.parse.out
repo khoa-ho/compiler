@@ -37,3 +37,5 @@ NaN
 (let f1 = (fun x -> (+ x 1)) in (let f2 = (fun x -> (- x 1)) in (<= (f1 (5)) (f2 (5)))))
 (((fun x -> (fun y -> (/ x y))) (8)) (2))
 ((fun x -> (fun y -> (/ x y))) (8))
+(let max2 = (fun x -> (fun y -> (if (<= y x) then x else y))) in (let a = 5 in (let b = 2 in ((max2 (a)) (b)))))
+(let fact = (fix f n -> (if (<= n 0) then 1 else (* n (f ((- n 1)))))) in (fact (5)))
