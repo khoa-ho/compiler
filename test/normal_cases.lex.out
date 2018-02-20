@@ -31,4 +31,10 @@
 , 4, +, -, 5, *, 2, EOL
 , let, x, =, 2, +, 3, in, x, <=, 10, EOL
 , let, y, =, 10, in, let, y, =, 1, in, y, +, y, EOL
+, fun, x, ->, x, *, 2, +, 1, EOL
+, (, fun, y, ->, if, y, then, 1, else, 0, ), (, false, ), EOL
+, (, fun, f, ->, f, (, 10, ), ), (, fun, var, ->, var, -, 1, ), EOL
+, let, f1, =, (, fun, x, ->, x, +, 1, ), in, let, f2, =, (, fun, x, ->, x, -, 1, ), in, f1, (, 5, ), <=, f2, (, 5, ), EOL
+, (, fun, x, ->, fun, y, ->, x, /, y, ), (, 8, ), (, 2, ), EOL
+, (, fun, x, ->, fun, y, ->, x, /, y, ), (, 8, ), EOL
 ]

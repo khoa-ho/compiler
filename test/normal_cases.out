@@ -31,3 +31,9 @@ NaN
 -6
 true
 2
+(fun x -> (+ (* x 2) 1))
+0
+9
+false
+4
+(fun y -> (/ 8 y))
