@@ -23,16 +23,19 @@ let rec string_of_exp (e:exp) : string =
   | EIf (e1, e2, e3) -> string_of_if e1 e2 e3
   | ELet (x, v, e')  -> string_of_let x v e'
   | EFunc (x, e')    -> string_of_func x e'
+  | EFapp (e1, e2)   -> string_of_func_app e1 e2
   | _ as e'          -> string_of_terminal_exp e'
 and string_of_bin_exp (o:bop) (e1:exp) (e2:exp) : string =
   let op_str = string_of_bop o in
-  String.concat " " ["(" ^ op_str; (string_of_exp e1); (string_of_exp e2)^ ")"] 
+  sprintf "(%s %s %s)" op_str (string_of_exp e1) (string_of_exp e2) 
 and string_of_if (e1:exp) (e2:exp) (e3:exp) : string =
-  String.concat " " ["(if"; (string_of_exp e1); "then"; (string_of_exp e2); "else"; (string_of_exp e3)^ ")"]
-and string_of_let (x:string) (v:exp) (e:exp) : string =
-  String.concat " " ["(let"; x; "="; (string_of_exp v); "in"; (string_of_exp e)^ ")"]
+  sprintf "(if %s then %s else %s)" (string_of_exp e1) (string_of_exp e2) (string_of_exp e3)
+and string_of_let (x:string) (e1:exp) (e2:exp) : string =
+  sprintf "(let %s = %s in %s)" x (string_of_exp e1) (string_of_exp e2)
 and string_of_func (x:string) (e:exp) =
-  String.concat " " ["(fun"; x; "->"; (string_of_exp e)^ ")"]
+  sprintf "(fun %s -> %s)" x (string_of_exp e) 
+and string_of_func_app (e1:exp) (e2:exp) =
+  sprintf "(%s (%s))" (string_of_exp e1) (string_of_exp e2)
 and string_of_bop (o:bop) : string =
   match o with
   | OPlus  -> "+"
@@ -56,6 +59,7 @@ let rec subst (v:exp) (x:string) (e:exp) : exp =
   | EIf (e1, e2, e3)               -> EIf (sub e1, sub e2, sub e3)
   | ELet (x', e1, e2) when x' <> x -> ELet (x', sub e1, sub e2)
   | EFunc (x', e') when x' <> x    -> EFunc (x', sub e')
+  | EFapp (e1, e2)                 -> EFapp (sub e1, sub e2)
   | EVar x' when x' = x            -> v
   | _ as non_var                   -> non_var
 
@@ -91,7 +95,7 @@ and interpret_func_app (e1:exp) (e2:exp) : exp =
   let v2 = interpret e2 in
   match f with
   | EFunc (x, e3) -> interpret (subst v2 x e3)
-  | _             -> error (sprintf "Expected a function, got %s" (string_of_exp e2)) 
+  | _             -> error (sprintf "Expected a function, got %s" (string_of_exp e1)) 
 and interpret_int_bin_exp (o:bop) (n1:int) (n2:int) : exp =
   match o with
   | OPlus  -> EInt (n1 + n2)
