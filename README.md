@@ -46,7 +46,7 @@ e ::= n | b | NaN | x | (e1 (+) e2) | if e1 then e2 else e3
     | let x = e1 in e2 | fun x -> e | fix f x -> e | e1 (e2)
 ```  
 
-* Following is an example *
+#### Following is an example 
 
 Let the sourcefile be `fact.src`:
 ```
