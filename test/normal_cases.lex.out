@@ -21,6 +21,7 @@
 , false, ;
 , if, true, then, 3, else, 4, ;
 , if, 4.6, <=, 3, then, if, 2, <=, 0.9, then, 2, else, 1, else, 124.9, ;
+, if, (, let, x, =, 5, in, x, <=, 10, ), then, 2, else, 3, ;
 , 0, /, 0, ;
 , 0, /, 0., ;
 , 0., /, 0, ;
