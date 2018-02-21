@@ -66,7 +66,7 @@ let rec subst (v:exp) (x:string) (e:exp) : exp =
   | EFunc (x', e') when x <> x'             -> EFunc (x', sub e')
   | EFix (f, x', e') when x <> x' && x <> f -> EFunc (x', sub e')
   | EVar x' when x = x'                     -> v
-  | e                            -> e
+  | _ as e_without_var                      -> e_without_var
 
 let rec interpret (e:exp) : exp =
   match e with
@@ -140,7 +140,7 @@ let rec step (e:exp) : exp =
   | EIf (e1, e2, e3) -> step_if e1 e2 e3
   | ELet (x, e1, e2) -> step_let x e1 e2
   | EFapp (e1, e2)   -> step_func_app e1 e2
-  | EVar _           -> error "Can't evaluate empty variable"
+  | EVar x           -> error (sprintf "Can't evaluate empty variable '%s'" x)
   | _ as e_terminal  -> e_terminal 
 and step_bin_exp (o:bop) (e1:exp) (e2:exp) : exp =
   if is_value e1 && is_value e2 then interpret_bin_exp o e1 e2
@@ -149,8 +149,8 @@ and step_bin_exp (o:bop) (e1:exp) (e2:exp) : exp =
 and step_if (e1:exp) (e2:exp) (e3:exp) : exp =
   if is_value e1 then
     match e1 with
-    | ENan              -> ENan
-    | EBool b           -> if b then step e2 else step e3
+    | ENan    -> ENan
+    | EBool b -> if b then step e2 else step e3
     | _ -> error (sprintf "Expected a boolean expr for the 1st sub-expr of 'if'-expr, got %s" (string_of_exp e1))
   else EIf (step e1, e2, e3)
 and step_let (x:string) (e1:exp) (e2:exp) : exp =
