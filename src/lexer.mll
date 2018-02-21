@@ -15,7 +15,11 @@ let string_of_token (t:token) : string =
   | TMinus   -> "-"
   | TTimes   -> "*"
   | TDiv     -> "/"
+  | TEq      -> "=="
   | TLeq     -> "<="
+  | TGeq     -> ">="
+  | TLt      -> "<"
+  | TGt      -> ">"
   | TIf      -> "if"
   | TThen    -> "then"
   | TElse    -> "else"
@@ -79,7 +83,11 @@ rule lex =
   | '-'      { TMinus }
   | '*'      { TTimes }
   | '/'      { TDiv }
+  | "=="     { TEq }
   | "<="     { TLeq }
+  | ">="     { TGeq }
+  | "<"      { TLt }
+  | ">"      { TGt }
   | '('      { TLParen }
   | ')'      { TRParen }
   | "if"     { TIf }

@@ -3,7 +3,8 @@
 %token <float> TFloat
 %token <bool> TBool
 %token <string> TVar
-%token TPlus TMinus TTimes TDiv TLeq
+%token TPlus TMinus TTimes TDiv 
+%token TEq TGeq TLeq TLt TGt
 %token TLParen TRParen
 %token TIf TThen TElse
 %token TLet TAsgn TIn
@@ -11,7 +12,7 @@
 %token TSColon EOF
 
 %nonassoc TElse TIn TArrow  
-%nonassoc TLeq
+%nonassoc TEq TGeq TLeq TLt TGt
 %left TPlus TMinus       
 %left TTimes TDiv
 %nonassoc TLParen
@@ -39,7 +40,11 @@ expr:
   | e1 = expr TMinus e2 = expr { EBop (OMinus, e1, e2) }
   | e1 = expr TTimes e2 = expr { EBop (OTimes, e1, e2) }
   | e1 = expr TDiv e2 = expr   { EBop (ODiv, e1, e2) }
+  | e1 = expr TEq e2 = expr    { EBop (OEq, e1, e2) }
   | e1 = expr TLeq e2 = expr   { EBop (OLeq, e1, e2) }
+  | e1 = expr TGeq e2 = expr   { EBop (OGeq, e1, e2) }
+  | e1 = expr TLt e2 = expr    { EBop (OLt, e1, e2) }
+  | e1 = expr TGt e2 = expr    { EBop (OGt, e1, e2) }
   | TIf e1 = expr TThen e2 = expr TElse e3 = expr      
     { EIf (e1, e2, e3) }
   | TLet x = TVar TAsgn e1 = expr TIn e2 = expr

@@ -1,6 +1,6 @@
 open Printf
 
-type bop = OPlus | OMinus | OTimes | ODiv | OLeq
+type bop = OPlus | OMinus | OTimes | ODiv | OEq | OLeq | OGeq | OLt | OGt 
 
 type exp =
   | ENan
@@ -46,7 +46,11 @@ and string_of_bop (o:bop) : string =
   | OMinus -> "-"
   | OTimes -> "*"
   | ODiv   -> "/"
+  | OEq    -> "=="
   | OLeq   -> "<="
+  | OGeq   -> ">="
+  | OLt    -> "<"
+  | OGt    -> ">"
 and string_of_terminal_exp (e:exp) : string =
   match e with
   | ENan     -> "NaN"
@@ -85,14 +89,14 @@ and interpret_bin_exp (o:bop) (e1:exp) (e2:exp) : exp =
   | (EInt n1, EFloat f2)   -> interpret_float_bin_exp o (float_of_int n1) f2
   | (EFloat f1, EInt n2)   -> interpret_float_bin_exp o f1 (float_of_int n2)
   | (EFloat f1, EFloat f2) -> interpret_float_bin_exp o f1 f2
-  | _ -> error (sprintf "Expected 2 numeric sub-exprs for a binary expr, got %s and %s" 
-                  (string_of_exp e1) (string_of_exp e2))
+  | _ -> error (sprintf "Expected 2 numeric exprs for the binary op '%s', got %s and %s" 
+                  (string_of_bop o) (string_of_exp e1) (string_of_exp e2))
 and interpret_if (e1:exp) (e2:exp) (e3:exp) : exp =
   let v1 = interpret e1 in
   match v1 with
   | ENan    -> ENan
   | EBool b -> if b then interpret e2 else interpret e3
-  | _ -> error (sprintf "Expected a boolean expr for the 1st sub-expr of 'if'-expr, got %s" (string_of_exp e1))
+  | _ -> error (sprintf "Expected a boolean for the guard of 'if'-expr, got %s" (string_of_exp e1))
 and interpret_let (x:string) (e1:exp) (e2:exp) =
   let v1 = interpret e1 in interpret (subst v1 x e2)
 and interpret_func_app (e1:exp) (e2:exp) : exp =
@@ -113,7 +117,11 @@ and interpret_int_bin_exp (o:bop) (n1:int) (n2:int) : exp =
       | (_, 0) -> error "Division by zero"
       | (_, _) -> EInt (n1 / n2)
     end
-  | OLeq    -> EBool (n1 <= n2)
+  | OEq  -> EBool (n1 = n2) 
+  | OLeq -> EBool (n1 <= n2)
+  | OGeq -> EBool (n1 >= n2)
+  | OLt  -> EBool (n1 < n2)
+  | OGt  -> EBool (n1 > n2)
 and interpret_float_bin_exp (o:bop) (f1:float) (f2:float) : exp =
   match o with
   | OPlus  -> EFloat (f1 +. f2)
@@ -125,7 +133,11 @@ and interpret_float_bin_exp (o:bop) (f1:float) (f2:float) : exp =
       | (_ , 0.) -> error "Division by zero"
       | (_ , _ ) -> EFloat (f1 /. f2)
     end
-  | OLeq    -> EBool (f1 <= f2)
+  | OEq  -> EBool (f1 = f2) 
+  | OLeq -> EBool (f1 <= f2)
+  | OGeq -> EBool (f1 >= f2)
+  | OLt  -> EBool (f1 < f2)
+  | OGt  -> EBool (f1 > f2)
 
 let is_value (e:exp) : bool =
   match e with
