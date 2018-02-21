@@ -46,6 +46,82 @@ e ::= n | b | NaN | x | (e1 (+) e2) | if e1 then e2 else e3
     | let x = e1 in e2 | fun x -> e | fix f x -> e | e1 (e2)
 ```  
 
+* Following is an example *
+
+Let the sourcefile be `fact.src`:
+```
+let max2 =
+  fun x -> fun y -> if x > y then x else y
+in
+let a = 5 in
+let b = 2 in
+max2 (a) (b);
+
+let fact = 
+  fix f n ->
+    if n <= 0 then
+      1
+    else
+      n * f (n - 1)
+in 
+fact (5);
+```
+Then
+```
+$ ./compile.native fact.src
+
+5
+120
+
+$ ./compile.native fact.src -lex
+
+[let, max2, =, fun, x, ->, fun, y, ->, if, y, <=, x, then, x, else, y, in, let, a, =, 5, in, let, b, =, 2, in, max2, (, a, ), (, b, ), ;
+, let, fact, =, fix, f, n, ->, if, n, <=, 0, then, 1, else, n, *, f, (, n, -, 1, ), in, fact, (, 5, ), ;
+]
+
+$ ./compiler.native fact.src -parse
+
+(let max2 = (fun x -> (fun y -> (if (y <= x) then x else y))) in (let a = 5 in (let b = 2 in ((max2 (a)) (b)))))
+(let fact = (fix f n -> (if (n <= 0) then 1 else (n * (f ((n - 1)))))) in (fact (5)))
+
+$ ./compiler.native fact.src -step
+
+(let max2 = (fun x -> (fun y -> (if (y <= x) then x else y))) in (let a = 5 in (let b = 2 in ((max2 (a)) (b)))))
+(let a = 5 in (let b = 2 in (((fun x -> (fun y -> (if (y <= x) then x else y))) (a)) (b))))
+(let b = 2 in (((fun x -> (fun y -> (if (y <= x) then x else y))) (5)) (b)))
+(((fun x -> (fun y -> (if (y <= x) then x else y))) (5)) (2))
+((fun y -> (if (y <= 5) then 5 else y)) (2))
+(if (2 <= 5) then 5 else 2)
+(if true then 5 else 2)
+5
+(let fact = (fix f n -> (if (n <= 0) then 1 else (n * (f ((n - 1)))))) in (fact (5)))
+((fix f n -> (if (n <= 0) then 1 else (n * (f ((n - 1)))))) (5))
+(if (5 <= 0) then 1 else (5 * ((fix f n -> (if (n <= 0) then 1 else (n * (f ((n - 1)))))) ((5 - 1)))))
+(if false then 1 else (5 * ((fix f n -> (if (n <= 0) then 1 else (n * (f ((n - 1)))))) ((5 - 1)))))
+(5 * ((fix f n -> (if (n <= 0) then 1 else (n * (f ((n - 1)))))) (4)))
+(5 * (if (4 <= 0) then 1 else (4 * ((fix f n -> (if (n <= 0) then 1 else (n * (f ((n - 1)))))) ((4 - 1))))))
+(5 * (if false then 1 else (4 * ((fix f n -> (if (n <= 0) then 1 else (n * (f ((n - 1)))))) ((4 - 1))))))
+(5 * (4 * ((fix f n -> (if (n <= 0) then 1 else (n * (f ((n - 1)))))) (3))))
+(5 * (4 * (if (3 <= 0) then 1 else (3 * ((fix f n -> (if (n <= 0) then 1 else (n * (f ((n - 1)))))) ((3 - 1)))))))
+(5 * (4 * (if false then 1 else (3 * ((fix f n -> (if (n <= 0) then 1 else (n * (f ((n - 1)))))) ((3 - 1)))))))
+(5 * (4 * (3 * ((fix f n -> (if (n <= 0) then 1 else (n * (f ((n - 1)))))) (2)))))
+(5 * (4 * (3 * (if (2 <= 0) then 1 else (2 * ((fix f n -> (if (n <= 0) then 1 else (n * (f ((n - 1)))))) ((2 - 1))))))))
+(5 * (4 * (3 * (if false then 1 else (2 * ((fix f n -> (if (n <= 0) then 1 else (n * (f ((n - 1)))))) ((2 - 1))))))))
+(5 * (4 * (3 * (2 * ((fix f n -> (if (n <= 0) then 1 else (n * (f ((n - 1)))))) (1))))))
+(5 * (4 * (3 * (2 * (if (1 <= 0) then 1 else (1 * ((fix f n -> (if (n <= 0) then 1 else (n * (f ((n - 1)))))) ((1 - 1)))))))))
+(5 * (4 * (3 * (2 * (if false then 1 else (1 * ((fix f n -> (if (n <= 0) then 1 else (n * (f ((n - 1)))))) ((1 - 1)))))))))
+(5 * (4 * (3 * (2 * (1 * ((fix f n -> (if (n <= 0) then 1 else (n * (f ((n - 1)))))) (0)))))))
+(5 * (4 * (3 * (2 * (1 * (if (0 <= 0) then 1 else (0 * ((fix f n -> (if (n <= 0) then 1 else (n * (f ((n - 1)))))) ((0 - 1))))))))))
+(5 * (4 * (3 * (2 * (1 * (if true then 1 else (0 * ((fix f n -> (if (n <= 0) then 1 else (n * (f ((n - 1)))))) ((0 - 1))))))))))
+(5 * (4 * (3 * (2 * (1 * 1)))))
+(5 * (4 * (3 * (2 * 1))))
+(5 * (4 * (3 * 2)))
+(5 * (4 * 6))
+(5 * 24)
+120
+
+```
+
 Changelog
 ---------
 ### [0.4] - 2018-02-20
