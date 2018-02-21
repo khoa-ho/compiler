@@ -1,6 +1,7 @@
 {
 open Parser
 open Lexing
+open Lang
 
 let string_of_token (t:token) : string =
   match t with
@@ -20,6 +21,8 @@ let string_of_token (t:token) : string =
   | TGeq     -> ">="
   | TLt      -> "<"
   | TGt      -> ">"
+  | TAnd     -> "&"
+  | TOr      -> "|"
   | TIf      -> "if"
   | TThen    -> "then"
   | TElse    -> "else"
@@ -88,6 +91,8 @@ rule lex =
   | ">="     { TGeq }
   | "<"      { TLt }
   | ">"      { TGt }
+  | "&&"     { TAnd }
+  | "||"     { TOr }
   | '('      { TLParen }
   | ')'      { TRParen }
   | "if"     { TIf }

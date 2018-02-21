@@ -1,6 +1,8 @@
 open Printf
 
-type bop = OPlus | OMinus | OTimes | ODiv | OEq | OLeq | OGeq | OLt | OGt 
+type bop = OPlus | OMinus | OTimes | ODiv 
+         | OEq | OLeq | OGeq | OLt | OGt
+         | OAnd | OOr
 
 type exp =
   | ENan
@@ -31,7 +33,8 @@ and string_of_bin_exp (o:bop) (e1:exp) (e2:exp) : string =
   let op_str = string_of_bop o in
   sprintf "(%s %s %s)" (string_of_exp e1) op_str (string_of_exp e2) 
 and string_of_if (e1:exp) (e2:exp) (e3:exp) : string =
-  sprintf "(if %s then %s else %s)" (string_of_exp e1) (string_of_exp e2) (string_of_exp e3)
+  sprintf "(if %s then %s else %s)" 
+    (string_of_exp e1) (string_of_exp e2) (string_of_exp e3)
 and string_of_let (x:string) (e1:exp) (e2:exp) : string =
   sprintf "(let %s = %s in %s)" x (string_of_exp e1) (string_of_exp e2)
 and string_of_func (x:string) (e:exp) =
@@ -51,6 +54,8 @@ and string_of_bop (o:bop) : string =
   | OGeq   -> ">="
   | OLt    -> "<"
   | OGt    -> ">"
+  | OAnd   -> "&&"
+  | OOr    -> "||"
 and string_of_terminal_exp (e:exp) : string =
   match e with
   | ENan     -> "NaN"
@@ -58,7 +63,8 @@ and string_of_terminal_exp (e:exp) : string =
   | EFloat f -> string_of_float f
   | EBool b  -> string_of_bool b
   | EVar x   -> x
-  | _ -> failwith (sprintf "Expected a terminal expr for 'string_of_terminal_exp', got %s" (string_of_exp e))
+  | _ -> failwith (sprintf "Expected a terminal expr for 'string_of_terminal_exp', got %s" 
+                     (string_of_exp e))
 
 let rec subst (v:exp) (x:string) (e:exp) : exp =
   let sub expr = subst v x expr in
@@ -89,14 +95,16 @@ and interpret_bin_exp (o:bop) (e1:exp) (e2:exp) : exp =
   | (EInt n1, EFloat f2)   -> interpret_float_bin_exp o (float_of_int n1) f2
   | (EFloat f1, EInt n2)   -> interpret_float_bin_exp o f1 (float_of_int n2)
   | (EFloat f1, EFloat f2) -> interpret_float_bin_exp o f1 f2
-  | _ -> error (sprintf "Expected 2 numeric exprs for the binary op '%s', got %s and %s" 
-                  (string_of_bop o) (string_of_exp e1) (string_of_exp e2))
+  | (EBool b1, EBool b2)   -> interpret_bool_bin_exp o b1 b2
+  | _ -> error (sprintf "Expected 2 numbers or 2 booleans, got %s and %s" 
+                  (string_of_exp e1) (string_of_exp e2))
 and interpret_if (e1:exp) (e2:exp) (e3:exp) : exp =
   let v1 = interpret e1 in
   match v1 with
   | ENan    -> ENan
   | EBool b -> if b then interpret e2 else interpret e3
-  | _ -> error (sprintf "Expected a boolean for the guard of 'if'-expr, got %s" (string_of_exp e1))
+  | _ -> error (sprintf "Expected a boolean for the guard of 'if'-expr, got %s" 
+                  (string_of_exp e1))
 and interpret_let (x:string) (e1:exp) (e2:exp) =
   let v1 = interpret e1 in interpret (subst v1 x e2)
 and interpret_func_app (e1:exp) (e2:exp) : exp =
@@ -122,6 +130,9 @@ and interpret_int_bin_exp (o:bop) (n1:int) (n2:int) : exp =
   | OGeq -> EBool (n1 >= n2)
   | OLt  -> EBool (n1 < n2)
   | OGt  -> EBool (n1 > n2)
+  | _ -> error (sprintf "Expected 2 numbers for the operator '%s', got %d and %d" 
+                  (string_of_bop o) n1 n2)
+
 and interpret_float_bin_exp (o:bop) (f1:float) (f2:float) : exp =
   match o with
   | OPlus  -> EFloat (f1 +. f2)
@@ -138,6 +149,14 @@ and interpret_float_bin_exp (o:bop) (f1:float) (f2:float) : exp =
   | OGeq -> EBool (f1 >= f2)
   | OLt  -> EBool (f1 < f2)
   | OGt  -> EBool (f1 > f2)
+  | _ -> error (sprintf "Expected 2 numbers for the operator '%s', got %f and %f" 
+                  (string_of_bop o) f1 f2)
+and interpret_bool_bin_exp (o:bop) (b1:bool) (b2:bool) : exp =
+  match o with
+  | OAnd -> EBool (b1 && b2)
+  | OOr  -> EBool (b1 || b2)
+  | _ -> error (sprintf "Expected 2 booleans for the operator '%s', got %b and %b" 
+                  (string_of_bop o) b1 b2)
 
 let is_value (e:exp) : bool =
   match e with
@@ -163,7 +182,8 @@ and step_if (e1:exp) (e2:exp) (e3:exp) : exp =
     match e1 with
     | ENan    -> ENan
     | EBool b -> if b then step e2 else step e3
-    | _ -> error (sprintf "Expected a boolean expr for the 1st sub-expr of 'if'-expr, got %s" (string_of_exp e1))
+    | _ -> error (sprintf "Expected a boolean expr for the 1st sub-expr of 'if'-expr, got %s" 
+                    (string_of_exp e1))
   else EIf (step e1, e2, e3)
 and step_let (x:string) (e1:exp) (e2:exp) : exp =
   if is_value e1 then subst e1 x e2 else ELet (x, step e1, e2)

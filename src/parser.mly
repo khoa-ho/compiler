@@ -5,19 +5,21 @@
 %token <string> TVar
 %token TPlus TMinus TTimes TDiv 
 %token TEq TGeq TLeq TLt TGt
+%token TAnd TOr
 %token TLParen TRParen
 %token TIf TThen TElse
 %token TLet TAsgn TIn
-%token TFix TFunc TArrow 
+%token TFix TFunc TArrow
 %token TSColon EOF
 
-%nonassoc TElse TIn TArrow  
-%nonassoc TEq TGeq TLeq TLt TGt
+%nonassoc TElse TIn TArrow 
+%left TAnd TOr 
+%left TEq TGeq TLeq TLt TGt
 %left TPlus TMinus       
 %left TTimes TDiv
 %nonassoc TLParen
 
-%start parse             /* the entry point */
+%start parse                  /* the entry point */
 %type <Lang.exp list> parse
 
 %%
@@ -45,6 +47,8 @@ expr:
   | e1 = expr TGeq e2 = expr   { EBop (OGeq, e1, e2) }
   | e1 = expr TLt e2 = expr    { EBop (OLt, e1, e2) }
   | e1 = expr TGt e2 = expr    { EBop (OGt, e1, e2) }
+  | e1 = expr TAnd e2 = expr   { EBop (OAnd, e1, e2) }
+  | e1 = expr TOr e2 = expr    { EBop (OOr, e1, e2) }
   | TIf e1 = expr TThen e2 = expr TElse e3 = expr      
     { EIf (e1, e2, e3) }
   | TLet x = TVar TAsgn e1 = expr TIn e2 = expr
