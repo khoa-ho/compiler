@@ -42,7 +42,8 @@ To compile more than 1 file, just add all the source_file_paths separated by spa
 Currently, the language supports the following grammar:
 
 ```
-e ::= n | b | NaN | x | (e1 (+) e2) | if e1 then e2 else e3 | let x = e1 in e2 | fun x -> e | fix f x -> e | e1 (e2)
+e ::= n | b | NaN | x | (e1 (+) e2) | if e1 then e2 else e3 
+    | let x = e1 in e2 | fun x -> e | fix f x -> e | e1 (e2)
 ```  
 
 Changelog
@@ -52,7 +53,7 @@ Changelog
 - Variables. Any series of characters started with a letter and may be followed by letter, digits, or '_' are considered variables.  
 - Substitutive semantics such as let binding and function. Functions (`fun x -> e`) are first-class values and thus can be returned from or used as input to any appropriate expression. Function application (`e1 (e2)`) results in an expression. One can construct any multiple-argument function by composing one-argument functions. Partial application of multiple-argument function, like in OCaml, is also allowed.
 - Recursion is now supported. Use `fix f x -> e` where `f` is any function identifier.
-- Small-step semantics. Use flag `step` in the CLI to enables the small-step evaluation mode.
+- Small-step semantics. Use flag `-step` in the CLI to enables the small-step evaluation mode.
 - Error reporting at the lexing stage now includes filename in addition to line and character number.
 #### Changed
 - Each statement is redefined as an expression ended with a semicolon (instead of newline character in version 0.3). 
