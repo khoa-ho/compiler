@@ -21,11 +21,12 @@ let compile filename =
       | _ -> lexing (token :: toks)
     in lexing []
   else 
-    let ast   = Parser.parse Lexer.lex lexbuf in
+    let ast = Parser.parse Lexer.lex lexbuf in
     if !is_parsing then
       List.map Lang.string_of_exp ast |> List.iter print_endline
     else
-      List.map Lang.interpret ast |> List.map Lang.string_of_exp |> List.iter print_endline
+      (* List.map Lang.interpret ast |> List.map Lang.string_of_exp |> List.iter print_endline *)
+      List.iter Lang.step_interpret ast
 
 let main () =
   let _ = cli () in
