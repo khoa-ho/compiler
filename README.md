@@ -44,6 +44,8 @@ Currently, the language supports the following grammar:
 ```
 e ::= n | b | NaN | x | (e1 (+) e2) | if e1 then e2 else e3 
     | let x = e1 in e2 | fun x -> e | fix f x -> e | e1 (e2)
+
+(+) ::= + | - | * | / | == | <= | >= | < | > | && | || 
 ```  
 
 #### Following is an example 
@@ -124,6 +126,10 @@ $ ./compiler.native fact.src -step
 
 Changelog
 ---------
+### [0.4.1] - 2018-02-21
+#### Added
+- Several comparison operators (`==`, `>=`, `<`, `>`) and boolean operators (`&&`, `||`)
+
 ### [0.4] - 2018-02-20
 #### Added
 - Variables. Any series of characters started with a letter and may be followed by letter, digits, or '_' are considered variables.  
