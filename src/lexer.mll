@@ -9,7 +9,7 @@ let string_of_token (t:token) : string =
   | TInt n   -> string_of_int n
   | TFloat f -> string_of_float f
   | TBool b  -> string_of_bool b
-  | TVar x   -> x
+  | TVar x   -> "$" ^ x
   | TLParen  -> "("
   | TRParen  -> ")"
   | TPlus    -> "+"
@@ -26,6 +26,10 @@ let string_of_token (t:token) : string =
   | TIf      -> "if"
   | TThen    -> "then"
   | TElse    -> "else"
+  | TColon   -> ":"
+  | TTypInt  -> "int"
+  | TTypFloat-> "float"
+  | TTypBool -> "bool"
   | TLet     -> "let"
   | TAsgn    -> "="
   | TIn      -> "in"
@@ -98,6 +102,10 @@ rule lex =
   | "if"     { TIf }
   | "then"   { TThen }
   | "else"   { TElse }
+  | ":"      { TColon }
+  | "int"    { TTypInt } 
+  | "float"  { TTypFloat }
+  | "bool"   { TTypBool }
   | "let"    { TLet }
   | '='      { TAsgn }
   | "in"     { TIn }

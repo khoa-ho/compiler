@@ -1,3 +1,8 @@
+%{
+  open Lang
+  type var_typ_pair = { x : string; t1 : typ }
+%}
+
 %token TNan
 %token <int> TInt
 %token <float> TFloat
@@ -8,11 +13,12 @@
 %token TAnd TOr
 %token TLParen TRParen
 %token TIf TThen TElse
+%token TColon TTypInt TTypFloat TTypBool
 %token TLet TAsgn TIn
 %token TFix TFunc TArrow
 %token TSColon EOF
 
-%nonassoc TElse TIn TArrow 
+%left TElse TIn TArrow 
 %left TAnd TOr 
 %left TEq TGeq TLeq TLt TGt
 %left TPlus TMinus       
@@ -36,8 +42,21 @@ expr:
   | f = TFloat                 { EFloat f }
   | b = TBool                  { EBool b }
   | x = TVar                   { EVar x }
-  | TMinus e = expr            { EBop (OMinus, EInt 0, e) }
   | TLParen e = expr TRParen   { e }
+  | e = bin_expr               { e }
+  | TIf e1 = expr TThen e2 = expr TElse e3 = expr      
+    { EIf (e1, e2, e3) }
+  | TLet x = TVar t = typ_asgn TAsgn e1 = expr TIn e2 = expr
+    { ELet (x, t, e1, e2) }
+  | TFunc TLParen x = TVar TColon t1 = typ TRParen TColon t2 = typ TArrow e = expr
+    { EFunc (x, t1, t2, e) }
+  | TFix f = TVar TLParen x = TVar TColon t1 = typ TRParen TColon t2 = typ TArrow e = expr
+    { EFix (f, x, t1, t2, e) }
+  | e1 = expr  TLParen e2 = expr TRParen
+    { EFapp (e1, e2) }
+
+bin_expr:
+  | TMinus e = expr            { EBop (OMinus, EInt 0, e) }
   | e1 = expr TPlus e2 = expr  { EBop (OPlus, e1, e2) }
   | e1 = expr TMinus e2 = expr { EBop (OMinus, e1, e2) }
   | e1 = expr TTimes e2 = expr { EBop (OTimes, e1, e2) }
@@ -49,13 +68,23 @@ expr:
   | e1 = expr TGt e2 = expr    { EBop (OGt, e1, e2) }
   | e1 = expr TAnd e2 = expr   { EBop (OAnd, e1, e2) }
   | e1 = expr TOr e2 = expr    { EBop (OOr, e1, e2) }
-  | TIf e1 = expr TThen e2 = expr TElse e3 = expr      
-    { EIf (e1, e2, e3) }
-  | TLet x = TVar TAsgn e1 = expr TIn e2 = expr
-    { ELet (x, e1, e2) }
-  | TFunc x = TVar TArrow e = expr
-    { EFunc (x, e) }
-  | TFix f = TVar x = TVar TArrow e = expr
-    { EFix (f, x, e) }
-  | e1 = expr  TLParen e2 = expr TRParen
-    { EFapp (e1, e2) }
+
+/*
+var_typ_asgn:
+  | TLParen x = TVar ta = typ_asgn TRParen
+    { { x=x; t1=ta } }
+*/
+
+typ_asgn:
+  | TColon t = typ             { t }
+
+typ:
+  | TTypInt                    { TypInt }
+  | TTypFloat                  { TypFloat }
+  | TTypBool                   { TypBool }
+  | TLParen t = typ TRParen    { t }
+  | t1 = typ TArrow t2 = typ   { TypFunc (t1, t2) }
+
+
+
+

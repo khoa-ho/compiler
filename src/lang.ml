@@ -4,6 +4,12 @@ type bop = OPlus | OMinus | OTimes | ODiv
          | OEq | OLeq | OGeq | OLt | OGt
          | OAnd | OOr
 
+type typ = 
+  | TypInt
+  | TypFloat
+  | TypBool
+  | TypFunc of typ * typ
+
 type exp =
   | ENan
   | EInt   of int
@@ -12,35 +18,45 @@ type exp =
   | EBop   of bop * exp * exp
   | EIf    of exp * exp * exp
   | EVar   of string
-  | ELet   of string * exp * exp
-  | EFunc  of string * exp
-  | EFix   of string * string * exp
+  | ELet   of string * typ * exp * exp
+  | EFunc  of string * typ * typ * exp
+  | EFix   of string * string * typ * typ * exp
   | EFapp  of exp * exp
 
 let error err_msg =
   fprintf stderr "Error: %s\n" err_msg; exit 1
 
+let rec string_of_typ (t:typ) : string =
+  match t with
+  | TypInt -> "int"
+  | TypFloat -> "float"
+  | TypBool -> "bool"
+  | TypFunc (t1, t2) -> sprintf "(%s -> %s)" (string_of_typ t1) (string_of_typ t2) 
+
 let rec string_of_exp (e:exp) : string =
   match e with
-  | EBop (o, e1, e2) -> string_of_bin_exp o e1 e2
-  | EIf (e1, e2, e3) -> string_of_if e1 e2 e3
-  | ELet (x, v, e')  -> string_of_let x v e'
-  | EFunc (x, e')    -> string_of_func x e'
-  | EFix (f, x, e')  -> string_of_fix f x e'
-  | EFapp (e1, e2)   -> string_of_func_app e1 e2
-  | _ as e'          -> string_of_terminal_exp e'
+  | EBop (o, e1, e2)   -> string_of_bin_exp o e1 e2
+  | EIf (e1, e2, e3)   -> string_of_if e1 e2 e3
+  | ELet (x, t, v, e') -> string_of_let x t v e'
+  | EFunc (x, t1, t2, e')   -> string_of_func x t1 t2 e'
+  | EFix (f, x, t1, t2, e') -> string_of_fix f x t1 t2 e'
+  | EFapp (e1, e2)     -> string_of_func_app e1 e2
+  | _ as e'            -> string_of_terminal_exp e'
 and string_of_bin_exp (o:bop) (e1:exp) (e2:exp) : string =
   let op_str = string_of_bop o in
   sprintf "(%s %s %s)" (string_of_exp e1) op_str (string_of_exp e2) 
 and string_of_if (e1:exp) (e2:exp) (e3:exp) : string =
   sprintf "(if %s then %s else %s)" 
     (string_of_exp e1) (string_of_exp e2) (string_of_exp e3)
-and string_of_let (x:string) (e1:exp) (e2:exp) : string =
-  sprintf "(let %s = %s in %s)" x (string_of_exp e1) (string_of_exp e2)
-and string_of_func (x:string) (e:exp) =
-  sprintf "(fun %s -> %s)" x (string_of_exp e)
-and string_of_fix (f:string) (x:string) (e:exp) =
-  sprintf "(fix %s %s -> %s)" f x (string_of_exp e)
+and string_of_let (x:string) (t:typ) (e1:exp) (e2:exp) : string =
+  sprintf "(let %s : %s = %s in %s)" 
+    x (string_of_typ t) (string_of_exp e1) (string_of_exp e2)
+and string_of_func (x:string) (t1:typ) (t2:typ) (e:exp) =
+  sprintf "(fun (%s:%s) : %s -> %s)" 
+    x (string_of_typ t1) (string_of_typ t2) (string_of_exp e)
+and string_of_fix (f:string) (x:string) (t1:typ) (t2:typ) (e:exp) =
+  sprintf "(fix %s (%s:%s) : %s -> %s)" 
+    f x (string_of_typ t1) (string_of_typ t2) (string_of_exp e)
 and string_of_func_app (e1:exp) (e2:exp) =
   sprintf "(%s (%s))" (string_of_exp e1) (string_of_exp e2)
 and string_of_bop (o:bop) : string =
@@ -66,26 +82,68 @@ and string_of_terminal_exp (e:exp) : string =
   | _ -> failwith (sprintf "Expected a terminal expr for 'string_of_terminal_exp', got %s" 
                      (string_of_exp e))
 
+let rec typecheck (e:exp) : typ =
+  match e with
+  | EInt _   -> TypInt
+  | EFloat _ -> TypFloat
+  | EBool _  -> TypBool
+  | EBop (o, e1, e2) -> 
+    let t1 = typecheck e1 in
+    let t2 = typecheck e2 in 
+    begin match o with 
+      | OPlus | OMinus | OTimes | ODiv 
+      | OEq | OLeq | OGeq | OLt | OGt -> 
+        begin match (t1, t2) with
+          | (TypInt, TypInt) -> TypInt
+          | (TypInt, TypFloat) 
+          | (TypFloat, TypInt) 
+          | (TypFloat, TypFloat) -> TypFloat
+          | _ -> error (sprintf "Expected type int or float in %s, got %s and %s" 
+                          (string_of_exp e) (string_of_typ t1) (string_of_typ t2))
+        end
+      | OAnd | OOr -> begin
+          match (t1, t2) with
+          | (TypBool, TypBool) -> TypBool
+          | _-> error (sprintf "Expect 2 boolean exprs for operator %s, got type %s and %s" 
+                         (string_of_exp e) (string_of_typ t1) (string_of_typ t2))
+        end
+    end
+  | EIf (e1, e2, e3) -> 
+    let t1 = typecheck e1 in
+    let t2 = typecheck e2 in
+    let t3 = typecheck e3 in
+    if t1 <> TypBool then 
+      error (sprintf "Expected type bool for 1st sub-expr of %s, got type %s"
+               (string_of_exp e) (string_of_typ t1))
+    else if t2 <> t3 then 
+      error (sprintf "Expected the same type for 2nd and 3rd sub-expr %s, got type %s and %s"
+               (string_of_exp e) (string_of_typ t2) (string_of_typ t3))
+    else t2 
+  | _ -> failwith (sprintf "Does not support typecheck for %s yet" (string_of_exp e))
+
 let rec subst (v:exp) (x:string) (e:exp) : exp =
   let sub expr = subst v x expr in
   match e with
-  | EBop (o, e1, e2)                        -> EBop (o, sub e1, sub e2)
-  | EIf (e1, e2, e3)                        -> EIf (sub e1, sub e2, sub e3)
-  | EFapp (e1, e2)                          -> EFapp (sub e1, sub e2)
-  | ELet (x', e1, e2) when x <> x'          -> ELet (x', sub e1, sub e2)
-  | EFunc (x', e') when x <> x'             -> EFunc (x', sub e')
-  | EFix (f, x', e') when x <> x' && x <> f -> EFunc (x', sub e')
-  | EVar x' when x = x'                     -> v
-  | _ as e_without_var                      -> e_without_var
+  | EBop (o, e1, e2)       -> EBop (o, sub e1, sub e2)
+  | EIf (e1, e2, e3)       -> EIf (sub e1, sub e2, sub e3)
+  | EFapp (e1, e2)         -> EFapp (sub e1, sub e2)
+  | ELet (x', t, e1, e2) 
+    when x <> x'           -> ELet (x', t, sub e1, sub e2)
+  | EFunc (x', t1, t2, e') 
+    when x <> x'           -> EFunc (x', t1, t2, sub e')
+  | EFix (f, x', t1, t2, e') 
+    when x <> x' && x <> f -> EFix (f, x', t1, t2, sub e')
+  | EVar x' when x = x'    -> v
+  | _ as e_without_var     -> e_without_var
 
 let rec interpret (e:exp) : exp =
   match e with
-  | EBop (o, e1, e2) -> interpret_bin_exp o e1 e2
-  | EIf (e1, e2, e3) -> interpret_if e1 e2 e3
-  | ELet (x, e1, e2) -> interpret_let x e1 e2
-  | EFapp (e1, e2)   -> interpret_func_app e1 e2
-  | EVar x           -> error (sprintf "No value found for variable '%s'" x)
-  | _ as e_terminal  -> e_terminal
+  | EBop (o, e1, e2)    -> interpret_bin_exp o e1 e2
+  | EIf (e1, e2, e3)    -> interpret_if e1 e2 e3
+  | ELet (x, t, e1, e2) -> interpret_let x e1 e2
+  | EFapp (e1, e2)      -> interpret_func_app e1 e2
+  | EVar x              -> error (sprintf "No value found for variable '%s'" x)
+  | _ as e_terminal     -> e_terminal
 and interpret_bin_exp (o:bop) (e1:exp) (e2:exp) : exp =
   let v1 = interpret e1 in
   let v2 = interpret e2 in
@@ -111,16 +169,16 @@ and interpret_func_app (e1:exp) (e2:exp) : exp =
   let f = interpret e1 in
   let v2 = interpret e2 in
   match f with
-  | EFunc (x, e3)    -> interpret (subst v2 x e3)
-  | EFix (f', x, e3) -> interpret (subst f f' (subst v2 x e3))
+  | EFunc (x, t1, t2, e3)    -> interpret (subst v2 x e3)
+  | EFix (f', x, t1, t2, e3) -> interpret (subst f f' (subst v2 x e3))
   | _ -> error (sprintf "Expected a function, got %s" (string_of_exp e1)) 
 and interpret_int_bin_exp (o:bop) (n1:int) (n2:int) : exp =
   match o with
   | OPlus  -> EInt (n1 + n2)
   | OMinus -> EInt (n1 - n2)
   | OTimes -> EInt (n1 * n2)
-  | ODiv   -> begin
-      match (n1, n2) with
+  | ODiv   -> 
+    begin match (n1, n2) with
       | (0, 0) -> ENan
       | (_, 0) -> error "Division by zero"
       | (_, _) -> EInt (n1 / n2)
@@ -138,8 +196,8 @@ and interpret_float_bin_exp (o:bop) (f1:float) (f2:float) : exp =
   | OPlus  -> EFloat (f1 +. f2)
   | OMinus -> EFloat (f1 -. f2)
   | OTimes -> EFloat (f1 *. f2)
-  | ODiv   -> begin
-      match (f1, f2) with
+  | ODiv   -> 
+    begin match (f1, f2) with
       | (0., 0.) -> ENan
       | (_ , 0.) -> error "Division by zero"
       | (_ , _ ) -> EFloat (f1 /. f2)
@@ -162,17 +220,17 @@ let is_value (e:exp) : bool =
   match e with
   | ENan 
   | EInt _ | EFloat _ | EBool _ 
-  | EFunc (_, _) | EFix (_, _, _) -> true
-  | _                             -> false
+  | EFunc (_,_,_,_) | EFix (_,_,_,_,_) -> true
+  | _                                  -> false
 
 let rec step (e:exp) : exp =
   match e with
-  | EBop (o, e1, e2) -> step_bin_exp o e1 e2
-  | EIf (e1, e2, e3) -> step_if e1 e2 e3
-  | ELet (x, e1, e2) -> step_let x e1 e2
-  | EFapp (e1, e2)   -> step_func_app e1 e2
-  | EVar x           -> error (sprintf "Can't evaluate empty variable '%s'" x)
-  | _ as e_terminal  -> e_terminal 
+  | EBop (o, e1, e2)    -> step_bin_exp o e1 e2
+  | EIf (e1, e2, e3)    -> step_if e1 e2 e3
+  | ELet (x, t, e1, e2) -> step_let x t e1 e2
+  | EFapp (e1, e2)      -> step_func_app e1 e2
+  | EVar x              -> error (sprintf "Can't evaluate empty variable '%s'" x)
+  | _ as e_terminal     -> e_terminal 
 and step_bin_exp (o:bop) (e1:exp) (e2:exp) : exp =
   if is_value e1 && is_value e2 then interpret_bin_exp o e1 e2
   else if is_value e1 then EBop (o, e1, step e2)
@@ -185,13 +243,13 @@ and step_if (e1:exp) (e2:exp) (e3:exp) : exp =
     | _ -> error (sprintf "Expected a boolean expr for the 1st sub-expr of 'if'-expr, got %s" 
                     (string_of_exp e1))
   else EIf (step e1, e2, e3)
-and step_let (x:string) (e1:exp) (e2:exp) : exp =
-  if is_value e1 then subst e1 x e2 else ELet (x, step e1, e2)
+and step_let (x:string) (t:typ) (e1:exp) (e2:exp) : exp =
+  if is_value e1 then subst e1 x e2 else ELet (x, t, step e1, e2)
 and step_func_app (e1:exp) (e2:exp) : exp =
   if is_value e1 && is_value e2 then
     match e1 with
-    | EFunc (x, e3)   -> subst e2 x e3
-    | EFix (f, x, e3) -> subst e1 f (subst e2 x e3)
+    | EFunc (x, t1, t2, e3)   -> subst e2 x e3
+    | EFix (f, x, t1, t2, e3) -> subst e1 f (subst e2 x e3)
     | _ -> error (sprintf "Expected a function, got %s" (string_of_exp e1))
   else if is_value e1 then EFapp (e1, step e2)
   else EFapp (step e1, e2)
