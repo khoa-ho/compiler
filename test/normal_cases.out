@@ -30,3 +30,19 @@ NaN
 true
 2
 (fun (x:int) : int -> ((x * 2) + 1))
+0
+9
+false
+4.
+(fun (y:float) : float -> (8 / y))
+5
+120
+()
+(5, true)
+(false, (fun (x:float) : float -> (x / 2.)))
+5
+true
+4
+2
+(fun (x:bool) : (int * int) -> (if (x || (5.6 < 10)) then (0, (0 + 1)) else (9, 9)))
+(0, 1)

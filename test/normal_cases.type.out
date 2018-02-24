@@ -37,3 +37,12 @@ float
 (float -> float)
 int
 int
+unit
+(int * bool)
+(bool * (float -> float))
+int
+bool
+int
+int
+(bool -> (int * int))
+(int * int)
