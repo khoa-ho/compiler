@@ -211,13 +211,16 @@ let rec subst (v:exp) (x:string) (e:exp) : exp =
   match e with
   | EBop (o, e1, e2)       -> EBop (o, sub e1, sub e2)
   | EIf (e1, e2, e3)       -> EIf (sub e1, sub e2, sub e3)
-  | EApp (e1, e2)          -> EApp (sub e1, sub e2)
   | ELet (x', t, e1, e2) 
     when x <> x'           -> ELet (x', t, sub e1, sub e2)
   | EFunc (x', t1, t2, e') 
     when x <> x'           -> EFunc (x', t1, t2, sub e')
   | EFix (f, x', t1, t2, e') 
     when x <> x' && x <> f -> EFix (f, x', t1, t2, sub e')
+  | EApp (e1, e2)          -> EApp (sub e1, sub e2)
+  | EPair (e1, e2)         -> EPair (sub e1, sub e2)
+  | EFst e'                -> EFst (sub e')
+  | ESnd e'                -> ESnd (sub e')
   | EVar x' when x = x'    -> v
   | e_without_var          -> e_without_var
 
@@ -225,18 +228,18 @@ let rec interpret (e:exp) =
   if is_value e then e else interpret (step e)
 and is_value (e:exp) : bool =
   match e with
-  | EUnit | ENan | EInt _ | EFloat _ | EBool _ | EVar _ -> true
-  | EBop (_, _, _) -> is_var_exp e
+  | EUnit | ENan | EInt _ | EFloat _ | EBool _  -> true
+  | EBop (_, _, _) | EIf (_, _, _) | EApp (_, _) -> is_var_exp e
   | EFunc (_,_,_, e) | EFix (_,_,_,_, e) -> is_value e 
-  | EPair (e1, e2) -> is_value e1 && is_value e2
+  | EPair (e1, e2) -> (is_value e1 && is_value e2) || is_var_exp e
   | _ -> false
 and is_var_exp (e:exp) : bool =
   match e with
-  | EBop (_, e1, e2) -> 
-    begin match (e1, e2) with
-      | (EVar _, e') | (e', EVar _) -> is_value e' 
-      | _ -> (is_value e1 && is_var_exp e2) || (is_var_exp e1 && is_value e2) 
-    end
+  | EVar _ -> true
+  | EBop (_, e1, e2) | EPair (e1, e2) -> 
+    (is_value e1 && is_var_exp e2) || (is_var_exp e1 && is_value e2)
+  | EIf (e1, e2, e3) -> is_var_exp e1 && is_value e2 && is_value e3
+  | EApp (e1, e2) -> is_var_exp e1 && is_value e2
   | _ -> false
 and step (e:exp) : exp =
   match e with
@@ -253,9 +256,6 @@ and step (e:exp) : exp =
 and step_bin_exp o e1 e2 =
   if is_value e1 && is_value e2 then 
     match (e1, e2) with
-    | (ENan, _) | (_, ENan)  -> ENan
-    | (EVar _, _)            -> EBop (o, e1, step e2)
-    | (_, EVar _)            -> EBop (o, step e1, e2)
     | (EInt n1, EInt n2)     -> step_int_bin_exp o n1 n2
     | (EInt n1, EFloat f2)   -> step_float_bin_exp o (float_of_int n1) f2
     | (EFloat f1, EInt n2)   -> step_float_bin_exp o f1 (float_of_int n2)
@@ -263,12 +263,16 @@ and step_bin_exp o e1 e2 =
     | (EBool b1, EBool b2)   -> step_bool_bin_exp o b1 b2
     | _ -> error (sprintf "Expected 2 numbers or 2 booleans, got %s and %s" 
                     (string_of_exp e1) (string_of_exp e2))
-  else if is_value e1 then EBop (o, e1, step e2)
+  else if is_value e1 || is_var_exp e1 then EBop (o, e1, step e2)
   else EBop (o, step e1, e2)
 and step_if e1 e2 e3 =
-  if is_value e1 then
+  if is_var_exp e1 then
+    if is_value e2 then 
+      EIf (e1, e2, step e3) 
+    else 
+      EIf (e1, step e2, e3)
+  else if is_value e1 then
     match e1 with
-    | ENan    -> ENan
     | EBool b -> if b then step e2 else step e3
     | _ -> error (sprintf "Expected a boolean expr for the 1st sub-expr of 'if'-expr, got %s" 
                     (string_of_exp e1))
@@ -285,7 +289,7 @@ and step_func_app e1 e2 =
     | EFunc (x, t1, t2, e3)   -> subst e2 x e3
     | EFix (f, x, t1, t2, e3) -> subst e1 f (subst e2 x e3)
     | _ -> error (sprintf "Expected a function, got %s" (string_of_exp e1))
-  else if is_value e1 then EApp (e1, step e2)
+  else if is_value e1 || is_var_exp e1 then EApp (e1, step e2)
   else EApp (step e1, e2)
 and step_pair e1 e2 =
   if is_value e1 && is_value e2 then EPair (e1, e2)
@@ -296,13 +300,13 @@ and step_fst e =
     match e with
     | EPair (e1, _) -> step e1
     | _ -> error (sprintf "Expected a pair, got %s" (string_of_exp e))
-  else step e
+  else EFst (step e)
 and step_snd e =
   if is_value e then 
     match e with
     | EPair (_, e2) -> step e2
     | _ -> error (sprintf "Expected a pair, got %s" (string_of_exp e))
-  else step e
+  else ESnd (step e)
 and step_int_bin_exp o n1 n2 =
   match o with
   | OPlus  -> EInt (n1 + n2)

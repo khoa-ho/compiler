@@ -24,8 +24,8 @@
 %left TEq TGeq TLeq TLt TGt
 %left TPlus TMinus       
 %left TTimes TDiv
-%nonassoc TFst TSnd
 %nonassoc TLParen
+%nonassoc TFst TSnd
 
 %start parse                  /* the entry point */
 %type <Lang.exp list> parse
@@ -86,10 +86,11 @@ typ_asgn:
   | TColon t = typ             { t }
 
 typ:
+  | TLParen t = typ TRParen    { t }
   | TTypInt                    { TypInt }
   | TTypFloat                  { TypFloat }
   | TTypBool                   { TypBool }
-  | TLParen t = typ TRParen    { t }
+  | t1 = typ TTimes t2 = typ   { TypPair (t1, t2) }
   | t1 = typ TArrow t2 = typ   { TypFunc (t1, t2) }
 
 

@@ -30,10 +30,3 @@ NaN
 true
 2
 (fun (x:int) : int -> ((x * 2) + 1))
-0
-9
-false
-4.
-(fun (y:float) : float -> (8 / y))
-5
-120

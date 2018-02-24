@@ -58,3 +58,10 @@ let fact : int->int =
       n * f (n - 1)
 in 
 fact (5);
+
+();
+
+(5, true);
+(let x : bool = true && 4 > 5 in x, fun (x:float) : float -> x / 2.0);
+fst (5, true);
+snd (5, true);
