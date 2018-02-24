@@ -1,12 +1,14 @@
 let is_lexing = ref false
 let is_parsing = ref false
 let is_stepping = ref false
+let is_typechecking = ref false
 let files = ref []
 
 let cli () =
   let speclist = 
     [("-lex", Arg.Set is_lexing, "Enables lexing mode");
      ("-parse", Arg.Set is_parsing, "Enables parsing mode");
+     ("-type", Arg.Set is_typechecking, "Enables typechecking mode");
      ("-step", Arg.Set is_stepping, "Enables small-step evaluation mode")] 
   in 
   let usage_msg = "Usage: ./compiler.native [flags] [source_paths]\nAvailable flags:" in
@@ -24,21 +26,27 @@ let compile filename =
     in lexing []
   else 
     let ast_list = Parser.parse Lexer.lex lexbuf in
-    if !is_parsing then
-      List.map Lang.string_of_exp ast_list |> List.iter print_endline
-    else if !is_stepping then
-      List.iter Lang.step_interpret ast_list
-    else
-      let interpret ast =
-        Lang.typecheck Lang.Context.empty ast |> ignore;
-        Lang.interpret ast |> Lang.string_of_exp |> print_endline
-      in
-      List.iter interpret ast_list
+    let parse_mode ast =
+      if !is_parsing then
+        Lang.string_of_exp ast |> print_endline
+      else if !is_typechecking then
+        Lang.typecheck Lang.Context.empty ast |> Lang.string_of_typ |> print_endline
+      else if !is_stepping then
+        begin
+          Lang.typecheck Lang.Context.empty ast |> ignore;
+          Lang.step_interpret ast
+        end
+      else
+        begin
+          Lang.typecheck Lang.Context.empty ast |> ignore;
+          Lang.interpret ast |> Lang.string_of_exp |> print_endline
+        end
+    in
+    List.iter parse_mode ast_list
 
 open Lang
 let main () =
   let _ = cli () in
   List.iter compile (List.rev !files)
-(* Lang.typecheck Context.empty (EFunc ("x", TypInt, TypBool, EBop (OLeq, EVar "x", EFloat 5.6))) |> Lang.string_of_typ |> print_endline *)
 
 let _ = if !Sys.interactive then () else main ()
