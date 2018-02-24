@@ -22,7 +22,7 @@ type exp =
   | ELet   of string * typ * exp * exp
   | EFunc  of string * typ * typ * exp
   | EFix   of string * string * typ * typ * exp
-  | EApp  of exp * exp
+  | EApp   of exp * exp
 
 let error err_msg =
   fprintf stderr "Error: %s\n" err_msg; exit 1
@@ -42,7 +42,7 @@ let rec string_of_exp (e:exp) : string =
   | ELet (x, t, v, e')      -> string_of_let x t v e'
   | EFunc (x, t1, t2, e')   -> string_of_func x t1 t2 e'
   | EFix (f, x, t1, t2, e') -> string_of_fix f x t1 t2 e'
-  | EApp (e1, e2)          -> string_of_func_app e1 e2
+  | EApp (e1, e2)           -> string_of_func_app e1 e2
   | e_terminal              -> string_of_terminal_exp e_terminal
 and string_of_bin_exp (o:bop) (e1:exp) (e2:exp) : string =
   let op_str = string_of_bop o in
@@ -177,7 +177,7 @@ let rec subst (v:exp) (x:string) (e:exp) : exp =
   match e with
   | EBop (o, e1, e2)       -> EBop (o, sub e1, sub e2)
   | EIf (e1, e2, e3)       -> EIf (sub e1, sub e2, sub e3)
-  | EApp (e1, e2)         -> EApp (sub e1, sub e2)
+  | EApp (e1, e2)          -> EApp (sub e1, sub e2)
   | ELet (x', t, e1, e2) 
     when x <> x'           -> ELet (x', t, sub e1, sub e2)
   | EFunc (x', t1, t2, e') 
@@ -192,7 +192,7 @@ let rec interpret (e:exp) : exp =
   | EBop (o, e1, e2)    -> interpret_bin_exp o e1 e2
   | EIf (e1, e2, e3)    -> interpret_if e1 e2 e3
   | ELet (x, t, e1, e2) -> interpret_let x e1 e2
-  | EApp (e1, e2)      -> interpret_func_app e1 e2
+  | EApp (e1, e2)       -> interpret_func_app e1 e2
   | EVar x              -> error (sprintf "No value found for variable '%s'" x)
   | e_terminal          -> e_terminal
 and interpret_bin_exp (o:bop) (e1:exp) (e2:exp) : exp =
@@ -279,7 +279,7 @@ let rec step (e:exp) : exp =
   | EBop (o, e1, e2)    -> step_bin_exp o e1 e2
   | EIf (e1, e2, e3)    -> step_if e1 e2 e3
   | ELet (x, t, e1, e2) -> step_let x t e1 e2
-  | EApp (e1, e2)      -> step_func_app e1 e2
+  | EApp (e1, e2)       -> step_func_app e1 e2
   | EVar x              -> error (sprintf "Can't evaluate empty variable '%s'" x)
   | e_terminal          -> e_terminal 
 and step_bin_exp (o:bop) (e1:exp) (e2:exp) : exp =
