@@ -228,18 +228,9 @@ let rec interpret (e:exp) =
   if is_value e then e else interpret (step e)
 and is_value (e:exp) : bool =
   match e with
-  | EUnit | ENan | EInt _ | EFloat _ | EBool _  -> true
-  | EBop (_, _, _) | EIf (_, _, _) | EApp (_, _) -> is_var_exp e
-  | EFunc (_,_,_, e) | EFix (_,_,_,_, e) -> is_value e 
-  | EPair (e1, e2) -> (is_value e1 && is_value e2) || is_var_exp e
-  | _ -> false
-and is_var_exp (e:exp) : bool =
-  match e with
-  | EVar _ -> true
-  | EBop (_, e1, e2) | EPair (e1, e2) -> 
-    (is_value e1 && is_var_exp e2) || (is_var_exp e1 && is_value e2)
-  | EIf (e1, e2, e3) -> is_var_exp e1 && is_value e2 && is_value e3
-  | EApp (e1, e2) -> is_var_exp e1 && is_value e2
+  | EUnit | ENan | EInt _ | EFloat _ | EBool _
+  | EFunc (_,_,_,_) | EFix (_,_,_,_,_) -> true
+  | EPair (e1, e2) -> is_value e1 && is_value e2
   | _ -> false
 and step (e:exp) : exp =
   match e with
@@ -263,19 +254,15 @@ and step_bin_exp o e1 e2 =
     | (EBool b1, EBool b2)   -> step_bool_bin_exp o b1 b2
     | _ -> error (sprintf "Expected 2 numbers or 2 booleans, got %s and %s" 
                     (string_of_exp e1) (string_of_exp e2))
-  else if is_value e1 || is_var_exp e1 then EBop (o, e1, step e2)
+  else if is_value e1 then EBop (o, e1, step e2)
   else EBop (o, step e1, e2)
 and step_if e1 e2 e3 =
-  if is_var_exp e1 then
-    if is_value e2 then 
-      EIf (e1, e2, step e3) 
-    else 
-      EIf (e1, step e2, e3)
-  else if is_value e1 then
+  if is_value e1 then
     match e1 with
     | EBool b -> if b then step e2 else step e3
-    | _ -> error (sprintf "Expected a boolean expr for the 1st sub-expr of 'if'-expr, got %s" 
-                    (string_of_exp e1))
+    | _ -> 
+      if is_value e2 then EIf (e1, e2, step e3)
+      else EIf (e1, step e2, e3)
   else EIf (step e1, e2, e3)
 and step_let x t e1 e2 =
   if is_value e1 then subst e1 x e2 else ELet (x, t, step e1, e2)
@@ -289,7 +276,7 @@ and step_func_app e1 e2 =
     | EFunc (x, t1, t2, e3)   -> subst e2 x e3
     | EFix (f, x, t1, t2, e3) -> subst e1 f (subst e2 x e3)
     | _ -> error (sprintf "Expected a function, got %s" (string_of_exp e1))
-  else if is_value e1 || is_var_exp e1 then EApp (e1, step e2)
+  else if is_value e1 then EApp (e1, step e2)
   else EApp (step e1, e2)
 and step_pair e1 e2 =
   if is_value e1 && is_value e2 then EPair (e1, e2)
