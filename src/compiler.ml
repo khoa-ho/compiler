@@ -23,16 +23,22 @@ let compile filename =
       | _ -> lexing (token :: toks)
     in lexing []
   else 
-    let ast = Parser.parse Lexer.lex lexbuf in
+    let ast_list = Parser.parse Lexer.lex lexbuf in
     if !is_parsing then
-      List.map Lang.string_of_exp ast |> List.iter print_endline
+      List.map Lang.string_of_exp ast_list |> List.iter print_endline
     else if !is_stepping then
-      List.iter Lang.step_interpret ast
+      List.iter Lang.step_interpret ast_list
     else
-      List.map Lang.interpret ast |> List.map Lang.string_of_exp |> List.iter print_endline
+      let interpret ast =
+        Lang.typecheck Lang.Context.empty ast |> ignore;
+        Lang.interpret ast |> Lang.string_of_exp |> print_endline
+      in
+      List.iter interpret ast_list
 
+open Lang
 let main () =
   let _ = cli () in
   List.iter compile (List.rev !files)
+(* Lang.typecheck Context.empty (EFunc ("x", TypInt, TypBool, EBop (OLeq, EVar "x", EFloat 5.6))) |> Lang.string_of_typ |> print_endline *)
 
 let _ = if !Sys.interactive then () else main ()

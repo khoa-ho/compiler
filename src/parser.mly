@@ -53,7 +53,7 @@ expr:
   | TFix f = TVar TLParen x = TVar TColon t1 = typ TRParen TColon t2 = typ TArrow e = expr
     { EFix (f, x, t1, t2, e) }
   | e1 = expr  TLParen e2 = expr TRParen
-    { EFapp (e1, e2) }
+    { EApp (e1, e2) }
 
 bin_expr:
   | TMinus e = expr            { EBop (OMinus, EInt 0, e) }
