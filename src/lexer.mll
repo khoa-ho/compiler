@@ -5,6 +5,7 @@ open Lang
 
 let string_of_token (t:token) : string =
   match t with
+  | TUnit    -> "()"
   | TNan     -> "NaN"
   | TInt n   -> string_of_int n
   | TFloat f -> string_of_float f
@@ -82,6 +83,7 @@ let var = alpha ['a'-'z' 'A'-'Z' '0'-'9' '_']*
 
 rule lex = 
   parse
+  | "()"     { TUnit }
   | "NaN"    { TNan }
   | int      { TInt (int_of_string (lexeme lexbuf)) }
   | float    { TFloat (float_of_string (lexeme lexbuf)) }

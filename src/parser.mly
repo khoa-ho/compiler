@@ -3,7 +3,7 @@
   type var_typ_pair = { x : string; t1 : typ }
 %}
 
-%token TNan
+%token TNan TUnit
 %token <int> TInt
 %token <float> TFloat
 %token <bool> TBool
@@ -37,6 +37,7 @@ statement:
   | e = expr TSColon           { e }
 
 expr:
+  | TUnit                      { EUnit }
   | TNan                       { ENan }
   | i = TInt                   { EInt i }
   | f = TFloat                 { EFloat f }

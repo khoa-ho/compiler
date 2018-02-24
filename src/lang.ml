@@ -5,6 +5,7 @@ type bop = OPlus | OMinus | OTimes | ODiv
          | OAnd | OOr
 
 type typ =
+  | TypUnit
   | TypNan
   | TypInt
   | TypFloat
@@ -12,6 +13,7 @@ type typ =
   | TypFunc of typ * typ
 
 type exp =
+  | EUnit
   | ENan
   | EInt   of int
   | EFloat of float
@@ -29,6 +31,7 @@ let error err_msg =
 
 let rec string_of_typ (t:typ) : string =
   match t with
+  | TypUnit  -> "unit"
   | TypNan   -> "NaN"
   | TypInt   -> "int"
   | TypFloat -> "float"
@@ -76,6 +79,7 @@ and string_of_bop (o:bop) : string =
   | OOr    -> "||"
 and string_of_terminal_exp (e:exp) : string =
   match e with
+  | EUnit    -> "()"
   | ENan     -> "NaN"
   | EInt n   -> string_of_int n
   | EFloat f -> string_of_float f
@@ -88,6 +92,7 @@ module Context = Map.Make(String)
 
 let rec typecheck (c:typ Context.t) (e:exp) : typ =
   match e with
+  | EUnit    -> TypUnit
   | ENan     -> TypNan
   | EInt _   -> TypInt
   | EFloat _ -> TypFloat
