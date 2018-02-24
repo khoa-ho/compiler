@@ -90,17 +90,17 @@ and string_of_terminal_exp (e:exp) : string =
 
 module Context = Map.Make(String)
 
-let rec typecheck (c:typ Context.t) (e:exp) : typ =
+let rec typecheck (g:typ Context.t) (e:exp) : typ =
   match e with
   | EUnit    -> TypUnit
   | ENan     -> TypNan
   | EInt _   -> TypInt
   | EFloat _ -> TypFloat
   | EBool _  -> TypBool
-  | EVar x   -> Context.find x c
+  | EVar x   -> Context.find x g
   | EBop (o, e1, e2) -> 
-    let t1 = typecheck c e1 in
-    let t2 = typecheck c e2 in 
+    let t1 = typecheck g e1 in
+    let t2 = typecheck g e2 in 
     begin match o with 
       | OPlus | OMinus | OTimes | ODiv -> 
         begin match (t1, t2) with
@@ -128,9 +128,9 @@ let rec typecheck (c:typ Context.t) (e:exp) : typ =
         end
     end
   | EIf (e1, e2, e3) -> 
-    let t1 = typecheck c e1 in
-    let t2 = typecheck c e2 in
-    let t3 = typecheck c e3 in
+    let t1 = typecheck g e1 in
+    let t2 = typecheck g e2 in
+    let t3 = typecheck g e3 in
     if t1 <> TypBool then 
       error (sprintf "Expected type bool for 1st sub-expr of %s, got type %s"
                (string_of_exp e) (string_of_typ t1))
@@ -139,33 +139,33 @@ let rec typecheck (c:typ Context.t) (e:exp) : typ =
                (string_of_exp e) (string_of_typ t2) (string_of_typ t3))
     else t2 
   | ELet (x, t, e1, e2) ->
-    let t1 = typecheck c e1 in
+    let t1 = typecheck g e1 in
     if t1 = t then
-      let c = Context.add x t1 c in
-      typecheck c e2
+      let g = Context.add x t1 g in
+      typecheck g e2
     else
       error (sprintf "Expected type %s for variable %s in %s, got type %s"
                (string_of_typ t) x (string_of_exp e) (string_of_typ t1))
   | EFunc (x, t1, t2, e') ->
-    let c = Context.add x t1 c in
-    let t = typecheck c e' in
+    let g = Context.add x t1 g in
+    let t = typecheck g e' in
     if t = t2 then TypFunc (t1, t2) 
     else 
       error (sprintf "Expected type %s for expr %s in %s, got type %s"
                (string_of_typ t2) (string_of_exp e') (string_of_exp e) (string_of_typ t))
   | EFix (f, x, t1, t2, e') ->
-    let c = Context.add f (TypFunc (t1, t2)) c in
-    let c = Context.add x t1 c in
-    let t = typecheck c e' in
+    let g = Context.add f (TypFunc (t1, t2)) g in
+    let g = Context.add x t1 g in
+    let t = typecheck g e' in
     if t = t2 then TypFunc (t1, t2) 
     else 
       error (sprintf "Expected type %s for expr %s in %s, got type %s"
                (string_of_typ t2) (string_of_exp e') (string_of_exp e) (string_of_typ t))
   | EApp (e1, e2) ->
-    let t = typecheck c e1 in
+    let t = typecheck g e1 in
     begin match t with
       | TypFunc (t1, t3) -> 
-        let t2 = typecheck c e2 in
+        let t2 = typecheck g e2 in
         if t2 = t1 then t3
         else
           error (sprintf "Expected type %s for expr %s in %s, got type %s"
