@@ -37,6 +37,9 @@ let string_of_token (t:token) : string =
   | TFix     -> "fix"
   | TFunc    -> "fun"
   | TArrow   -> "->"
+  | TComma   -> ","
+  | TFst     -> "fst"
+  | TSnd     -> "snd"
   | TSColon  -> ";\n"
   | EOF      -> "EOF"
 
@@ -114,6 +117,9 @@ rule lex =
   | "fix"    { TFix }
   | "fun"    { TFunc }
   | "->"     { TArrow }
+  | ","      { TComma }
+  | "fst"    { TFst }
+  | "snd"    { TSnd }
   | var      { TVar (lexeme lexbuf) }
   | ";"      { TSColon }
   | white    { lex lexbuf }

@@ -16,6 +16,7 @@
 %token TColon TTypInt TTypFloat TTypBool
 %token TLet TAsgn TIn
 %token TFix TFunc TArrow
+%token TComma TFst TSnd
 %token TSColon EOF
 
 %left TElse TIn TArrow 
@@ -23,6 +24,7 @@
 %left TEq TGeq TLeq TLt TGt
 %left TPlus TMinus       
 %left TTimes TDiv
+%nonassoc TFst TSnd
 %nonassoc TLParen
 
 %start parse                  /* the entry point */
@@ -55,6 +57,10 @@ expr:
     { EFix (f, x, t1, t2, e) }
   | e1 = expr  TLParen e2 = expr TRParen
     { EApp (e1, e2) }
+  | TLParen e1 = expr TComma e2 = expr TRParen
+    { EPair (e1, e2) }
+  | TFst e = expr { EFst e }
+  | TSnd e = expr { ESnd e }
 
 bin_expr:
   | TMinus e = expr            { EBop (OMinus, EInt 0, e) }

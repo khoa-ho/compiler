@@ -11,6 +11,7 @@ type typ =
   | TypFloat
   | TypBool
   | TypFunc of typ * typ
+  | TypPair of typ * typ
 
 type exp =
   | EUnit
@@ -25,6 +26,9 @@ type exp =
   | EFunc  of string * typ * typ * exp
   | EFix   of string * string * typ * typ * exp
   | EApp   of exp * exp
+  | EPair  of exp * exp
+  | EFst   of exp
+  | ESnd   of exp
 
 let error err_msg =
   fprintf stderr "Error: %s\n" err_msg; exit 1
@@ -36,6 +40,7 @@ let rec string_of_typ (t:typ) : string =
   | TypInt   -> "int"
   | TypFloat -> "float"
   | TypBool  -> "bool"
+  | TypPair (t1, t2) -> sprintf "(%s * %s)" (string_of_typ t1) (string_of_typ t2) 
   | TypFunc (t1, t2) -> sprintf "(%s -> %s)" (string_of_typ t1) (string_of_typ t2) 
 
 let rec string_of_exp (e:exp) : string =
@@ -46,25 +51,34 @@ let rec string_of_exp (e:exp) : string =
   | EFunc (x, t1, t2, e')   -> string_of_func x t1 t2 e'
   | EFix (f, x, t1, t2, e') -> string_of_fix f x t1 t2 e'
   | EApp (e1, e2)           -> string_of_func_app e1 e2
+  | EPair (e1, e2)          -> string_of_pair e1 e2
+  | EFst e'                 -> string_of_fst e'
+  | ESnd e'                 -> string_of_snd e'
   | e_terminal              -> string_of_terminal_exp e_terminal
-and string_of_bin_exp (o:bop) (e1:exp) (e2:exp) : string =
+and string_of_bin_exp o e1 e2 =
   let op_str = string_of_bop o in
   sprintf "(%s %s %s)" (string_of_exp e1) op_str (string_of_exp e2) 
-and string_of_if (e1:exp) (e2:exp) (e3:exp) : string =
+and string_of_if e1 e2 e3 =
   sprintf "(if %s then %s else %s)" 
     (string_of_exp e1) (string_of_exp e2) (string_of_exp e3)
-and string_of_let (x:string) (t:typ) (e1:exp) (e2:exp) : string =
+and string_of_let x t e1 e2 =
   sprintf "(let %s : %s = %s in %s)" 
     x (string_of_typ t) (string_of_exp e1) (string_of_exp e2)
-and string_of_func (x:string) (t1:typ) (t2:typ) (e:exp) =
+and string_of_func x t1 t2 e =
   sprintf "(fun (%s:%s) : %s -> %s)" 
     x (string_of_typ t1) (string_of_typ t2) (string_of_exp e)
-and string_of_fix (f:string) (x:string) (t1:typ) (t2:typ) (e:exp) =
+and string_of_fix f x t1 t2 e =
   sprintf "(fix %s (%s:%s) : %s -> %s)" 
     f x (string_of_typ t1) (string_of_typ t2) (string_of_exp e)
-and string_of_func_app (e1:exp) (e2:exp) =
+and string_of_func_app e1 e2 =
   sprintf "(%s (%s))" (string_of_exp e1) (string_of_exp e2)
-and string_of_bop (o:bop) : string =
+and string_of_pair e1 e2 =
+  sprintf "(%s, %s)" (string_of_exp e1) (string_of_exp e2)
+and string_of_fst e =
+  sprintf "(fst %s)" (string_of_exp e)
+and string_of_snd e =
+  sprintf "(snd %s)" (string_of_exp e)
+and string_of_bop o =
   match o with
   | OPlus  -> "+"
   | OMinus -> "-"
@@ -77,7 +91,7 @@ and string_of_bop (o:bop) : string =
   | OGt    -> ">"
   | OAnd   -> "&&"
   | OOr    -> "||"
-and string_of_terminal_exp (e:exp) : string =
+and string_of_terminal_exp e =
   match e with
   | EUnit    -> "()"
   | ENan     -> "NaN"
@@ -97,7 +111,10 @@ let rec typecheck (g:typ Context.t) (e:exp) : typ =
   | EInt _   -> TypInt
   | EFloat _ -> TypFloat
   | EBool _  -> TypBool
-  | EVar x   -> Context.find x g
+  | EVar x   -> 
+    begin try Context.find x g
+      with Not_found -> error (sprintf "Variable %s doesn't have an assigned type" x)
+    end
   | EBop (o, e1, e2) -> 
     let t1 = typecheck g e1 in
     let t2 = typecheck g e2 in 
@@ -132,7 +149,7 @@ let rec typecheck (g:typ Context.t) (e:exp) : typ =
     let t2 = typecheck g e2 in
     let t3 = typecheck g e3 in
     if t1 <> TypBool then 
-      error (sprintf "Expected type bool for 1st sub-expr of %s, got type %s"
+      error (sprintf "Expected type bool for cond. guard of %s, got type %s"
                (string_of_exp e) (string_of_typ t1))
     else if t2 <> t3 then 
       error (sprintf "Expected the same type for 2nd and 3rd sub-exprs of %s, got type %s and %s"
@@ -151,7 +168,7 @@ let rec typecheck (g:typ Context.t) (e:exp) : typ =
     let t = typecheck g e' in
     if t = t2 then TypFunc (t1, t2) 
     else 
-      error (sprintf "Expected type %s for expr %s in %s, got type %s"
+      error (sprintf "Expected type %s for %s in %s, got type %s"
                (string_of_typ t2) (string_of_exp e') (string_of_exp e) (string_of_typ t))
   | EFix (f, x, t1, t2, e') ->
     let g = Context.add f (TypFunc (t1, t2)) g in
@@ -159,7 +176,7 @@ let rec typecheck (g:typ Context.t) (e:exp) : typ =
     let t = typecheck g e' in
     if t = t2 then TypFunc (t1, t2) 
     else 
-      error (sprintf "Expected type %s for expr %s in %s, got type %s"
+      error (sprintf "Expected type %s for %s in %s, got type %s"
                (string_of_typ t2) (string_of_exp e') (string_of_exp e) (string_of_typ t))
   | EApp (e1, e2) ->
     let t = typecheck g e1 in
@@ -168,14 +185,26 @@ let rec typecheck (g:typ Context.t) (e:exp) : typ =
         let t2 = typecheck g e2 in
         if t2 = t1 then t3
         else
-          error (sprintf "Expected type %s for expr %s in %s, got type %s"
+          error (sprintf "Expected type %s for %s in %s, got type %s"
                    (string_of_typ t1) (string_of_exp e2) (string_of_exp e) (string_of_typ t2))
       | _ ->  error (sprintf "Expected type function for %s in %s, got type %s"
                        (string_of_exp e1) (string_of_exp e) (string_of_typ t))
     end
-
-let is_type_check (e:exp) : bool =
-  typecheck Context.empty e |> ignore; true
+  | EPair (e1, e2) -> TypPair (typecheck g e1, typecheck g e2)
+  | EFst e' -> 
+    let t = typecheck g e' in
+    begin match t with
+      | TypPair (t1, _) -> t1
+      | _ -> error (sprintf "Expected type pair for %s in %s, got %s"
+                      (string_of_exp e') (string_of_exp e) (string_of_typ t))
+    end
+  | ESnd e' -> 
+    let t = typecheck g e' in
+    begin match t with
+      | TypPair (_, t2) -> t2
+      | _ -> error (sprintf "Expected type pair for %s in %s, got %s"
+                      (string_of_exp e') (string_of_exp e) (string_of_typ t))
+    end
 
 let rec subst (v:exp) (x:string) (e:exp) : exp =
   let sub expr = subst v x expr in
@@ -190,45 +219,91 @@ let rec subst (v:exp) (x:string) (e:exp) : exp =
   | EFix (f, x', t1, t2, e') 
     when x <> x' && x <> f -> EFix (f, x', t1, t2, sub e')
   | EVar x' when x = x'    -> v
-  | _ as e_without_var     -> e_without_var
+  | e_without_var          -> e_without_var
 
-let rec interpret (e:exp) : exp =
+let rec interpret (e:exp) =
+  if is_value e then e else interpret (step e)
+and is_value (e:exp) : bool =
   match e with
-  | EBop (o, e1, e2)    -> interpret_bin_exp o e1 e2
-  | EIf (e1, e2, e3)    -> interpret_if e1 e2 e3
-  | ELet (x, t, e1, e2) -> interpret_let x e1 e2
-  | EApp (e1, e2)       -> interpret_func_app e1 e2
-  | EVar x              -> error (sprintf "No value found for variable '%s'" x)
-  | e_terminal          -> e_terminal
-and interpret_bin_exp (o:bop) (e1:exp) (e2:exp) : exp =
-  let v1 = interpret e1 in
-  let v2 = interpret e2 in
-  match (v1, v2) with
-  | (ENan, _) | (_, ENan)  -> ENan
-  | (EInt n1, EInt n2)     -> interpret_int_bin_exp o n1 n2
-  | (EInt n1, EFloat f2)   -> interpret_float_bin_exp o (float_of_int n1) f2
-  | (EFloat f1, EInt n2)   -> interpret_float_bin_exp o f1 (float_of_int n2)
-  | (EFloat f1, EFloat f2) -> interpret_float_bin_exp o f1 f2
-  | (EBool b1, EBool b2)   -> interpret_bool_bin_exp o b1 b2
-  | _ -> error (sprintf "Expected 2 numbers or 2 booleans, got %s and %s" 
-                  (string_of_exp e1) (string_of_exp e2))
-and interpret_if (e1:exp) (e2:exp) (e3:exp) : exp =
-  let v1 = interpret e1 in
-  match v1 with
-  | ENan    -> ENan
-  | EBool b -> if b then interpret e2 else interpret e3
-  | _ -> error (sprintf "Expected a boolean for the guard of 'if'-expr, got %s" 
-                  (string_of_exp e1))
-and interpret_let (x:string) (e1:exp) (e2:exp) =
-  let v1 = interpret e1 in interpret (subst v1 x e2)
-and interpret_func_app (e1:exp) (e2:exp) : exp =
-  let f = interpret e1 in
-  let v2 = interpret e2 in
-  match f with
-  | EFunc (x, t1, t2, e3)    -> interpret (subst v2 x e3)
-  | EFix (f', x, t1, t2, e3) -> interpret (subst f f' (subst v2 x e3))
-  | _ -> error (sprintf "Expected a function, got %s" (string_of_exp e1)) 
-and interpret_int_bin_exp (o:bop) (n1:int) (n2:int) : exp =
+  | EUnit | ENan | EInt _ | EFloat _ | EBool _ | EVar _ -> true
+  | EBop (_, _, _) -> is_var_exp e
+  | EFunc (_,_,_, e) | EFix (_,_,_,_, e) -> is_value e 
+  | EPair (e1, e2) -> is_value e1 && is_value e2
+  | _ -> false
+and is_var_exp (e:exp) : bool =
+  match e with
+  | EBop (_, e1, e2) -> 
+    begin match (e1, e2) with
+      | (EVar _, e') | (e', EVar _) -> is_value e' 
+      | _ -> (is_value e1 && is_var_exp e2) || (is_var_exp e1 && is_value e2) 
+    end
+  | _ -> false
+and step (e:exp) : exp =
+  match e with
+  | EBop (o, e1, e2)        -> step_bin_exp o e1 e2
+  | EIf (e1, e2, e3)        -> step_if e1 e2 e3
+  | ELet (x, t, e1, e2)     -> step_let x t e1 e2
+  | EFunc (x, t1, t2, e')   -> step_func x t1 t2 e'
+  | EFix (f, x, t1, t2, e') -> step_fix f x t1 t2 e'
+  | EApp (e1, e2)           -> step_func_app e1 e2
+  | EPair (e1, e2)          -> step_pair e1 e2
+  | EFst e'                 -> step_fst e'
+  | ESnd e'                 -> step_snd e'
+  | e_terminal              -> e_terminal 
+and step_bin_exp o e1 e2 =
+  if is_value e1 && is_value e2 then 
+    match (e1, e2) with
+    | (ENan, _) | (_, ENan)  -> ENan
+    | (EVar _, _)            -> EBop (o, e1, step e2)
+    | (_, EVar _)            -> EBop (o, step e1, e2)
+    | (EInt n1, EInt n2)     -> step_int_bin_exp o n1 n2
+    | (EInt n1, EFloat f2)   -> step_float_bin_exp o (float_of_int n1) f2
+    | (EFloat f1, EInt n2)   -> step_float_bin_exp o f1 (float_of_int n2)
+    | (EFloat f1, EFloat f2) -> step_float_bin_exp o f1 f2
+    | (EBool b1, EBool b2)   -> step_bool_bin_exp o b1 b2
+    | _ -> error (sprintf "Expected 2 numbers or 2 booleans, got %s and %s" 
+                    (string_of_exp e1) (string_of_exp e2))
+  else if is_value e1 then EBop (o, e1, step e2)
+  else EBop (o, step e1, e2)
+and step_if e1 e2 e3 =
+  if is_value e1 then
+    match e1 with
+    | ENan    -> ENan
+    | EBool b -> if b then step e2 else step e3
+    | _ -> error (sprintf "Expected a boolean expr for the 1st sub-expr of 'if'-expr, got %s" 
+                    (string_of_exp e1))
+  else EIf (step e1, e2, e3)
+and step_let x t e1 e2 =
+  if is_value e1 then subst e1 x e2 else ELet (x, t, step e1, e2)
+and step_func x t1 t2 e =
+  let e' = if is_value e then e else step e in EFunc (x, t1, t2, e')
+and step_fix f x t1 t2 e =
+  let e' = if is_value e then e else step e in EFix (f, x, t1, t2, e') 
+and step_func_app e1 e2 =
+  if is_value e1 && is_value e2 then
+    match e1 with
+    | EFunc (x, t1, t2, e3)   -> subst e2 x e3
+    | EFix (f, x, t1, t2, e3) -> subst e1 f (subst e2 x e3)
+    | _ -> error (sprintf "Expected a function, got %s" (string_of_exp e1))
+  else if is_value e1 then EApp (e1, step e2)
+  else EApp (step e1, e2)
+and step_pair e1 e2 =
+  if is_value e1 && is_value e2 then EPair (e1, e2)
+  else if is_value e1 then EPair (e1, step e2)
+  else EPair (step e1, e2)
+and step_fst e =
+  if is_value e then 
+    match e with
+    | EPair (e1, _) -> step e1
+    | _ -> error (sprintf "Expected a pair, got %s" (string_of_exp e))
+  else step e
+and step_snd e =
+  if is_value e then 
+    match e with
+    | EPair (_, e2) -> step e2
+    | _ -> error (sprintf "Expected a pair, got %s" (string_of_exp e))
+  else step e
+and step_int_bin_exp o n1 n2 =
   match o with
   | OPlus  -> EInt (n1 + n2)
   | OMinus -> EInt (n1 - n2)
@@ -246,8 +321,7 @@ and interpret_int_bin_exp (o:bop) (n1:int) (n2:int) : exp =
   | OGt  -> EBool (n1 > n2)
   | _ -> error (sprintf "Expected 2 numbers for the operator '%s', got %d and %d" 
                   (string_of_bop o) n1 n2)
-
-and interpret_float_bin_exp (o:bop) (f1:float) (f2:float) : exp =
+and step_float_bin_exp o f1 f2 =
   match o with
   | OPlus  -> EFloat (f1 +. f2)
   | OMinus -> EFloat (f1 -. f2)
@@ -265,56 +339,17 @@ and interpret_float_bin_exp (o:bop) (f1:float) (f2:float) : exp =
   | OGt  -> EBool (f1 > f2)
   | _ -> error (sprintf "Expected 2 numbers for the operator '%s', got %f and %f" 
                   (string_of_bop o) f1 f2)
-and interpret_bool_bin_exp (o:bop) (b1:bool) (b2:bool) : exp =
+and step_bool_bin_exp o b1 b2 =
   match o with
   | OAnd -> EBool (b1 && b2)
   | OOr  -> EBool (b1 || b2)
   | _ -> error (sprintf "Expected 2 booleans for the operator '%s', got %b and %b" 
                   (string_of_bop o) b1 b2)
 
-let is_value (e:exp) : bool =
-  match e with
-  | EUnit
-  | ENan 
-  | EInt _ | EFloat _ | EBool _ 
-  | EFunc (_,_,_,_) | EFix (_,_,_,_,_) -> true
-  | _                                  -> false
-
-let rec step (e:exp) : exp =
-  match e with
-  | EBop (o, e1, e2)    -> step_bin_exp o e1 e2
-  | EIf (e1, e2, e3)    -> step_if e1 e2 e3
-  | ELet (x, t, e1, e2) -> step_let x t e1 e2
-  | EApp (e1, e2)       -> step_func_app e1 e2
-  | EVar x              -> error (sprintf "Can't evaluate empty variable '%s'" x)
-  | e_terminal          -> e_terminal 
-and step_bin_exp (o:bop) (e1:exp) (e2:exp) : exp =
-  if is_value e1 && is_value e2 then interpret_bin_exp o e1 e2
-  else if is_value e1 then EBop (o, e1, step e2)
-  else EBop (o, step e1, e2)
-and step_if (e1:exp) (e2:exp) (e3:exp) : exp =
-  if is_value e1 then
-    match e1 with
-    | ENan    -> ENan
-    | EBool b -> if b then step e2 else step e3
-    | _ -> error (sprintf "Expected a boolean expr for the 1st sub-expr of 'if'-expr, got %s" 
-                    (string_of_exp e1))
-  else EIf (step e1, e2, e3)
-and step_let (x:string) (t:typ) (e1:exp) (e2:exp) : exp =
-  if is_value e1 then subst e1 x e2 else ELet (x, t, step e1, e2)
-and step_func_app (e1:exp) (e2:exp) : exp =
-  if is_value e1 && is_value e2 then
-    match e1 with
-    | EFunc (x, t1, t2, e3)   -> subst e2 x e3
-    | EFix (f, x, t1, t2, e3) -> subst e1 f (subst e2 x e3)
-    | _ -> error (sprintf "Expected a function, got %s" (string_of_exp e1))
-  else if is_value e1 then EApp (e1, step e2)
-  else EApp (step e1, e2)
-
 let rec step_interpret (e:exp) =
   if is_value e then 
     string_of_exp e |> print_endline
   else begin 
     string_of_exp e |> print_endline;
-    step e |> step_interpret
+    step_interpret (step e)
   end
