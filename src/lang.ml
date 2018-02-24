@@ -274,6 +274,7 @@ and interpret_bool_bin_exp (o:bop) (b1:bool) (b2:bool) : exp =
 
 let is_value (e:exp) : bool =
   match e with
+  | EUnit
   | ENan 
   | EInt _ | EFloat _ | EBool _ 
   | EFunc (_,_,_,_) | EFix (_,_,_,_,_) -> true
