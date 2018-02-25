@@ -75,3 +75,17 @@ tl (6 :: 5 :: ([] : int));
 let x : int = 2 in (6 :: x :: ([] : int));
 empty (true :: false :: (4 < 5) :: ([] : bool));
 empty [] : float;
+
+let max : int->(int list->int) =
+  fix f (cur_max:int) : int list->int ->
+    fun (l:int list) : int ->
+    if (empty l) then
+      cur_max
+    else
+      let cur : int = hd l in
+      if cur > cur_max then 
+        f (cur) (tl l)
+      else
+        f (cur_max) (tl l)
+in 
+max (0) (4 :: 7 :: 2 :: 1 :: [] : int);
