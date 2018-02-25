@@ -63,10 +63,10 @@ expr:
     { EPair (e1, e2) }
   | TFst e = expr              { EFst e }
   | TSnd e = expr              { ESnd e }
-  | TLBrack TRBrack TColon t = typ
-    { EList ([], t) } %prec TDColon
+  | TLBrack TRBrack TColon t = typ %prec TDColon
+    { ENil t } 
   | e1 = expr TDColon e2 = expr
-    { EAppd (e1, e2) }
+    { ECons (e1, e2) }
   | THd e = expr               { EHd (e) }
   | TTl e = expr               { ETl (e) }
   | TEmpty e = expr            { EEmpty (e) }

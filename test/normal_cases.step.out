@@ -150,3 +150,13 @@ true
 (if (false || true) then (0, (0 + 1)) else (9, 9))
 (if true then (0, (0 + 1)) else (9, 9))
 (0, 1)
+(hd (6 :: (5 :: [] : int)))
+6
+(tl (6 :: (5 :: [] : int)))
+(5 :: [] : int)
+(let x : int = 2 in (6 :: (x :: [] : int)))
+(6 :: (2 :: [] : int))
+(empty (true :: (false :: ((4 < 5) :: [] : bool))))
+false
+(empty [] : float)
+true

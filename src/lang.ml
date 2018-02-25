@@ -12,6 +12,7 @@ type typ =
   | TypBool
   | TypFunc of typ * typ
   | TypPair of typ * typ
+  | TypList of typ
 
 type exp =
   | EUnit
@@ -29,8 +30,8 @@ type exp =
   | EPair  of exp * exp
   | EFst   of exp
   | ESnd   of exp
-  | EList  of exp list * typ
-  | EAppd  of exp * exp
+  | ENil  of typ
+  | ECons  of exp * exp
   | EHd    of exp
   | ETl    of exp
   | EEmpty of exp
@@ -46,7 +47,8 @@ let rec string_of_typ (t:typ) : string =
   | TypFloat -> "float"
   | TypBool  -> "bool"
   | TypPair (t1, t2) -> sprintf "(%s * %s)" (string_of_typ t1) (string_of_typ t2) 
-  | TypFunc (t1, t2) -> sprintf "(%s -> %s)" (string_of_typ t1) (string_of_typ t2) 
+  | TypFunc (t1, t2) -> sprintf "(%s -> %s)" (string_of_typ t1) (string_of_typ t2)
+  | TypList t -> string_of_typ t ^ " list"
 
 let rec string_of_exp (e:exp) : string =
   match e with
@@ -57,8 +59,13 @@ let rec string_of_exp (e:exp) : string =
   | EFix (f, x, t1, t2, e') -> string_of_fix f x t1 t2 e'
   | EApp (e1, e2)           -> string_of_func_app e1 e2
   | EPair (e1, e2)          -> string_of_pair e1 e2
-  | EFst e'                 -> string_of_fst e'
-  | ESnd e'                 -> string_of_snd e'
+  | EFst e'                 -> string_of_prefix_op "fst" e'
+  | ESnd e'                 -> string_of_prefix_op "snd" e'
+  | ENil t                  -> string_of_list t
+  | ECons (e1, e2)          -> string_of_cons e1 e2
+  | EHd e'                  -> string_of_prefix_op "hd" e'
+  | ETl e'                  -> string_of_prefix_op "tl" e'
+  | EEmpty e'               -> string_of_prefix_op "empty" e'
   | e_terminal              -> string_of_terminal_exp e_terminal
 and string_of_bin_exp o e1 e2 =
   let op_str = string_of_bop o in
@@ -79,10 +86,18 @@ and string_of_func_app e1 e2 =
   sprintf "(%s (%s))" (string_of_exp e1) (string_of_exp e2)
 and string_of_pair e1 e2 =
   sprintf "(%s, %s)" (string_of_exp e1) (string_of_exp e2)
-and string_of_fst e =
-  sprintf "(fst %s)" (string_of_exp e)
-and string_of_snd e =
-  sprintf "(snd %s)" (string_of_exp e)
+and string_of_prefix_op o e =
+  sprintf "(%s %s)" o (string_of_exp e)
+and string_of_list t =
+  sprintf "[] : %s" (string_of_typ t)
+and string_of_cons e1 e2 =
+  let str2 = 
+    match e2 with
+    | ENil t -> string_of_list t
+    | ECons (e1, e2) -> string_of_cons e1 e2
+    | _ -> error (sprintf "Expected a cons, got %s" (string_of_exp e2))
+  in
+  sprintf "(%s :: %s)" (string_of_exp e1) str2
 and string_of_bop o =
   match o with
   | OPlus  -> "+"
@@ -200,17 +215,52 @@ let rec typecheck (g:typ Context.t) (e:exp) : typ =
     let t = typecheck g e' in
     begin match t with
       | TypPair (t1, _) -> t1
-      | _ -> error (sprintf "Expected type pair for %s in %s, got %s"
+      | _ -> error (sprintf "Expected type a' * a' for %s in %s, got %s"
                       (string_of_exp e') (string_of_exp e) (string_of_typ t))
     end
   | ESnd e' -> 
     let t = typecheck g e' in
     begin match t with
       | TypPair (_, t2) -> t2
-      | _ -> error (sprintf "Expected type pair for %s in %s, got %s"
+      | _ -> error (sprintf "Expected type a' * a' for %s in %s, got %s"
                       (string_of_exp e') (string_of_exp e) (string_of_typ t))
     end
-  | _ -> failwith "No typecheck yet"
+  | ENil t -> TypList t
+  | ECons (e1, e2) ->
+    let t1 = typecheck g e1 in
+    let t2 = typecheck g e2 in
+    let t = 
+      begin match t2 with
+        | TypList t -> t
+        | _ -> error (sprintf "Expected type a' list for %s in %s, got %s" 
+                        (string_of_exp e1) (string_of_exp e) (string_of_typ t2))
+      end
+    in
+    if t1 = t then t2
+    else 
+      error (sprintf "Expected type %s for %s in %s, got %s" 
+               (string_of_typ t) (string_of_exp e1) (string_of_exp e) (string_of_typ t1))
+  | EHd e' ->
+    let t' = typecheck g e' in
+    begin match t' with
+      | TypList t -> t
+      | _ -> error (sprintf "Expected type a' list for %s in %s, got %s" 
+                      (string_of_exp e') (string_of_exp e) (string_of_typ t'))
+    end
+  | ETl e' ->
+    let t' = typecheck g e' in
+    begin match t' with
+      | TypList _ -> t'
+      | _ -> error (sprintf "Expected type a' list for %s in %s, got %s" 
+                      (string_of_exp e') (string_of_exp e) (string_of_typ t'))
+    end
+  | EEmpty e' ->
+    let t' = typecheck g e' in
+    begin match t' with
+      | TypList _ -> TypBool
+      | _ -> error (sprintf "Expected type a' list for %s in %s, got %s" 
+                      (string_of_exp e') (string_of_exp e) (string_of_typ t'))
+    end
 
 let rec subst (v:exp) (x:string) (e:exp) : exp =
   let sub expr = subst v x expr in
@@ -227,6 +277,9 @@ let rec subst (v:exp) (x:string) (e:exp) : exp =
   | EPair (e1, e2)         -> EPair (sub e1, sub e2)
   | EFst e'                -> EFst (sub e')
   | ESnd e'                -> ESnd (sub e')
+  | ECons (e1, e2)         -> ECons (sub e1, sub e2)
+  | EHd e'                 -> EHd (sub e')
+  | ETl e'                 -> ETl (sub e')
   | EVar x' when x = x'    -> v
   | e_without_var          -> e_without_var
 
@@ -235,7 +288,8 @@ let rec interpret (e:exp) =
 and is_value (e:exp) : bool =
   match e with
   | EUnit | ENan | EInt _ | EFloat _ | EBool _
-  | EFunc (_,_,_,_) | EFix (_,_,_,_,_) -> true
+  | EFunc (_,_,_,_) | EFix (_,_,_,_,_) 
+  | ENil _ | ECons (_,_) -> true
   | EPair (e1, e2) -> is_value e1 && is_value e2
   | _ -> false
 and step (e:exp) : exp =
@@ -249,6 +303,9 @@ and step (e:exp) : exp =
   | EPair (e1, e2)          -> step_pair e1 e2
   | EFst e'                 -> step_fst e'
   | ESnd e'                 -> step_snd e'
+  | EHd e'                  -> step_hd e'
+  | ETl e'                  -> step_tl e'
+  | EEmpty e'               -> step_empty e'
   | e_terminal              -> e_terminal 
 and step_bin_exp o e1 e2 =
   if is_value e1 && is_value e2 then 
@@ -300,6 +357,25 @@ and step_snd e =
     | EPair (_, e2) -> step e2
     | _ -> error (sprintf "Expected a pair, got %s" (string_of_exp e))
   else ESnd (step e)
+and step_hd e =
+  if is_value e then 
+    match e with
+    | ECons (e1, _) -> step e1
+    | _ -> error (sprintf "Expected a list, got %s" (string_of_exp e))
+  else EHd (step e)
+and step_tl e =
+  if is_value e then 
+    match e with
+    | ECons (_, e2) -> step e2
+    | _ -> error (sprintf "Expected a list, got %s" (string_of_exp e))
+  else ETl (step e)
+and step_empty e =
+  if is_value e then 
+    match e with
+    | ENil _       -> EBool true
+    | ECons (_, _) -> EBool false
+    | _ -> error (sprintf "Expected a list, got %s" (string_of_exp e))
+  else EEmpty (step e)
 and step_int_bin_exp o n1 n2 =
   match o with
   | OPlus  -> EInt (n1 + n2)

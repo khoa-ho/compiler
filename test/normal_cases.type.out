@@ -46,3 +46,8 @@ int
 int
 (bool -> (int * int))
 (int * int)
+int
+int list
+int list
+bool
+bool

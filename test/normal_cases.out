@@ -46,3 +46,8 @@ true
 2
 (fun (x:bool) : (int * int) -> (if (x || (5.6 < 10)) then (0, (0 + 1)) else (9, 9)))
 (0, 1)
+6
+(5 :: [] : int)
+(6 :: (2 :: [] : int))
+false
+true

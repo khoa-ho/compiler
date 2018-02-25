@@ -9,7 +9,7 @@ let cli () =
     [("-lex", Arg.Set is_lexing, "Enables lexing mode");
      ("-parse", Arg.Set is_parsing, "Enables parsing mode");
      ("-type", Arg.Set is_typechecking, "Enables typechecking mode");
-     ("-step", Arg.Set is_stepping, "Enables small-step evaluation mode")] 
+     ("-step", Arg.Set is_stepping, "Enables small-step evaluation mode")]
   in 
   let usage_msg = "Usage: ./compiler.native [flags] [source_paths]\nAvailable flags:" in
   Arg.parse speclist (fun filename -> files :=  filename :: !files) usage_msg
