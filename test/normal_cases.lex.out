@@ -37,7 +37,7 @@
 , (, fun, (, $x, :, int, ), :, float, ->, float, ->, fun, (, $y, :, float, ), :, float, ->, $x, /, $y, ), (, 8, ), ;
 , let, $max2, :, int, ->, (, int, ->, int, ), =, fun, (, $x, :, int, ), :, int, ->, int, ->, fun, (, $y, :, int, ), :, int, ->, if, $y, <=, $x, then, $x, else, $y, in, let, $a, :, int, =, 5, in, let, $b, :, int, =, 2, in, $max2, (, $a, ), (, $b, ), ;
 , let, $fact, :, int, ->, int, =, fix, $f, (, $n, :, int, ), :, int, ->, if, $n, <=, 0, then, 1, else, $n, *, $f, (, $n, -, 1, ), in, $fact, (, 5, ), ;
-, (), ;
+, (, ), ;
 , (, 5, ,, true, ), ;
 , (, let, $x, :, bool, =, true, &, 4, >, 5, in, $x, ,, fun, (, $x, :, float, ), :, float, ->, $x, /, 2., ), ;
 , fst, (, 5, ,, true, ), ;

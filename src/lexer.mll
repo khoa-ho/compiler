@@ -5,7 +5,6 @@ open Lang
 
 let string_of_token (t:token) : string =
   match t with
-  | TUnit    -> "()"
   | TNan     -> "NaN"
   | TInt n   -> string_of_int n
   | TFloat f -> string_of_float f
@@ -40,6 +39,12 @@ let string_of_token (t:token) : string =
   | TComma   -> ","
   | TFst     -> "fst"
   | TSnd     -> "snd"
+  | TLBrack  -> "["
+  | TRBrack  -> "]"
+  | TDColon  -> "::"
+  | THd      -> "hd"
+  | TTl      -> "tl"
+  | TEmpty   -> "empty"
   | TSColon  -> ";\n"
   | EOF      -> "EOF"
 
@@ -86,7 +91,6 @@ let var = alpha ['a'-'z' 'A'-'Z' '0'-'9' '_']*
 
 rule lex = 
   parse
-  | "()"     { TUnit }
   | "NaN"    { TNan }
   | int      { TInt (int_of_string (lexeme lexbuf)) }
   | float    { TFloat (float_of_string (lexeme lexbuf)) }
@@ -120,6 +124,12 @@ rule lex =
   | ","      { TComma }
   | "fst"    { TFst }
   | "snd"    { TSnd }
+  | '['      { TLBrack }
+  | ']'      { TRBrack }
+  | "::"     { TDColon }
+  | "hd"     { THd }
+  | "tl"     { TTl }
+  | "empty"  { TEmpty }
   | var      { TVar (lexeme lexbuf) }
   | ";"      { TSColon }
   | white    { lex lexbuf }

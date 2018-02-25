@@ -29,6 +29,11 @@ type exp =
   | EPair  of exp * exp
   | EFst   of exp
   | ESnd   of exp
+  | EList  of exp list * typ
+  | EAppd  of exp * exp
+  | EHd    of exp
+  | ETl    of exp
+  | EEmpty of exp
 
 let error err_msg =
   fprintf stderr "Error: %s\n" err_msg; exit 1
@@ -205,6 +210,7 @@ let rec typecheck (g:typ Context.t) (e:exp) : typ =
       | _ -> error (sprintf "Expected type pair for %s in %s, got %s"
                       (string_of_exp e') (string_of_exp e) (string_of_typ t))
     end
+  | _ -> failwith "No typecheck yet"
 
 let rec subst (v:exp) (x:string) (e:exp) : exp =
   let sub expr = subst v x expr in
