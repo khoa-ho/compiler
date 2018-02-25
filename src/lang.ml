@@ -280,6 +280,7 @@ let rec subst (v:exp) (x:string) (e:exp) : exp =
   | ECons (e1, e2)         -> ECons (sub e1, sub e2)
   | EHd e'                 -> EHd (sub e')
   | ETl e'                 -> ETl (sub e')
+  | EEmpty e'              -> EEmpty (sub e')
   | EVar x' when x = x'    -> v
   | e_without_var          -> e_without_var
 

@@ -17,7 +17,7 @@
 %token TLet TAsgn TIn
 %token TFix TFunc TArrow
 %token TComma TFst TSnd
-%token TLBrack TRBrack TDColon THd TTl TEmpty
+%token TLBrack TRBrack TDColon THd TTl TEmpty TList
 %token TSColon EOF
 
 %left TElse TIn TArrow 
@@ -28,6 +28,7 @@
 %right TDColon
 %nonassoc TLParen
 %nonassoc TFst TSnd THd TTl TEmpty
+%left TList
 
 %start parse                  /* the entry point */
 %type <Lang.exp list> parse
@@ -101,3 +102,4 @@ typ:
   | TTypBool                   { TypBool }
   | t1 = typ TTimes t2 = typ   { TypPair (t1, t2) }
   | t1 = typ TArrow t2 = typ   { TypFunc (t1, t2) }
+  | t = typ TList              { TypList t }
