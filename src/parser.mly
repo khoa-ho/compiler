@@ -101,7 +101,3 @@ typ:
   | TTypBool                   { TypBool }
   | t1 = typ TTimes t2 = typ   { TypPair (t1, t2) }
   | t1 = typ TArrow t2 = typ   { TypFunc (t1, t2) }
-
-
-
-
