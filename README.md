@@ -10,7 +10,7 @@ Khoa Ho [hokhoa@grinnell.edu]
 Overview
 --------
 
-A simple compiler implemented in OCaml
+A compiler, implemented in OCaml, for a simple statically-typed functional language
 
 
 Usage
@@ -38,94 +38,56 @@ To compile more than 1 file, just add all the source_file_paths separated by spa
 * `-lex`: Showing the token list after lexing the source
 * `-parse`: Showing the abstract syntax tree generated after parsing the source
 * `-step`: Showing the small-step evaluation of the expression(s)
+* `-type`: Showing the type of the expression(s)
 
 Currently, the language supports the following grammar:
 
 ```
-e ::= n | b | NaN | x | (e1 (+) e2) | if e1 then e2 else e3 
-    | let x = e1 in e2 | fun x -> e | fix f x -> e | e1 (e2)
+e ::= n | b | () | NaN | x | (e1 (+) e2) | if e1 then e2 else e3 
+    | let x : t = e1 in e2 | fun (x:t1) : t2 -> e | fix f (x:t1) : t2 -> e | e1 (e2)
+    | (e1, e2) | fst e | snd e |
+    | [] : t | e1 :: e2 | hd e | tl e | empty e
 
-(+) ::= + | - | * | / | == | <= | >= | < | > | && | || 
+(+) ::= + | - | * | / | == | <= | >= | < | > | && | ||
+
+t ::= int | bool | t1 -> t2 | unit | t1 * t2 | [t] 
 ```  
 
 #### Following is an example 
 
-Let the sourcefile be `fact.src`:
+Let the sourcefile be `max.src`:
 ```
-let max2 =
-  fun x -> fun y -> if x > y then x else y
-in
-let a = 5 in
-let b = 2 in
-max2 (a) (b);
-
-let fact = 
-  fix f n ->
-    if n <= 0 then
-      1
+let max : int->(int list->int) =
+  fix f (cur_max:int) : int list->int ->
+    fun (l:int list) : int ->
+    if (empty l) then
+      cur_max
     else
-      n * f (n - 1)
+      let cur : int = hd l in
+      if cur > cur_max then 
+        f (cur) (tl l)
+      else
+        f (cur_max) (tl l)
 in 
-fact (5);
+max (0) (4 :: 7 :: 2 :: 1 :: [] : int);
 ```
 Then
 ```
-$ ./compile.native fact.src
-
-5
-120
-
-$ ./compile.native fact.src -lex
-
-[let, max2, =, fun, x, ->, fun, y, ->, if, y, <=, x, then, x, else, y, in, let, a, =, 5, in, let, b, =, 2, in, max2, (, a, ), (, b, ), ;
-, let, fact, =, fix, f, n, ->, if, n, <=, 0, then, 1, else, n, *, f, (, n, -, 1, ), in, fact, (, 5, ), ;
-]
-
-$ ./compiler.native fact.src -parse
-
-(let max2 = (fun x -> (fun y -> (if (y <= x) then x else y))) in (let a = 5 in (let b = 2 in ((max2 (a)) (b)))))
-(let fact = (fix f n -> (if (n <= 0) then 1 else (n * (f ((n - 1)))))) in (fact (5)))
-
-$ ./compiler.native fact.src -step
-
-(let max2 = (fun x -> (fun y -> (if (y <= x) then x else y))) in (let a = 5 in (let b = 2 in ((max2 (a)) (b)))))
-(let a = 5 in (let b = 2 in (((fun x -> (fun y -> (if (y <= x) then x else y))) (a)) (b))))
-(let b = 2 in (((fun x -> (fun y -> (if (y <= x) then x else y))) (5)) (b)))
-(((fun x -> (fun y -> (if (y <= x) then x else y))) (5)) (2))
-((fun y -> (if (y <= 5) then 5 else y)) (2))
-(if (2 <= 5) then 5 else 2)
-(if true then 5 else 2)
-5
-(let fact = (fix f n -> (if (n <= 0) then 1 else (n * (f ((n - 1)))))) in (fact (5)))
-((fix f n -> (if (n <= 0) then 1 else (n * (f ((n - 1)))))) (5))
-(if (5 <= 0) then 1 else (5 * ((fix f n -> (if (n <= 0) then 1 else (n * (f ((n - 1)))))) ((5 - 1)))))
-(if false then 1 else (5 * ((fix f n -> (if (n <= 0) then 1 else (n * (f ((n - 1)))))) ((5 - 1)))))
-(5 * ((fix f n -> (if (n <= 0) then 1 else (n * (f ((n - 1)))))) (4)))
-(5 * (if (4 <= 0) then 1 else (4 * ((fix f n -> (if (n <= 0) then 1 else (n * (f ((n - 1)))))) ((4 - 1))))))
-(5 * (if false then 1 else (4 * ((fix f n -> (if (n <= 0) then 1 else (n * (f ((n - 1)))))) ((4 - 1))))))
-(5 * (4 * ((fix f n -> (if (n <= 0) then 1 else (n * (f ((n - 1)))))) (3))))
-(5 * (4 * (if (3 <= 0) then 1 else (3 * ((fix f n -> (if (n <= 0) then 1 else (n * (f ((n - 1)))))) ((3 - 1)))))))
-(5 * (4 * (if false then 1 else (3 * ((fix f n -> (if (n <= 0) then 1 else (n * (f ((n - 1)))))) ((3 - 1)))))))
-(5 * (4 * (3 * ((fix f n -> (if (n <= 0) then 1 else (n * (f ((n - 1)))))) (2)))))
-(5 * (4 * (3 * (if (2 <= 0) then 1 else (2 * ((fix f n -> (if (n <= 0) then 1 else (n * (f ((n - 1)))))) ((2 - 1))))))))
-(5 * (4 * (3 * (if false then 1 else (2 * ((fix f n -> (if (n <= 0) then 1 else (n * (f ((n - 1)))))) ((2 - 1))))))))
-(5 * (4 * (3 * (2 * ((fix f n -> (if (n <= 0) then 1 else (n * (f ((n - 1)))))) (1))))))
-(5 * (4 * (3 * (2 * (if (1 <= 0) then 1 else (1 * ((fix f n -> (if (n <= 0) then 1 else (n * (f ((n - 1)))))) ((1 - 1)))))))))
-(5 * (4 * (3 * (2 * (if false then 1 else (1 * ((fix f n -> (if (n <= 0) then 1 else (n * (f ((n - 1)))))) ((1 - 1)))))))))
-(5 * (4 * (3 * (2 * (1 * ((fix f n -> (if (n <= 0) then 1 else (n * (f ((n - 1)))))) (0)))))))
-(5 * (4 * (3 * (2 * (1 * (if (0 <= 0) then 1 else (0 * ((fix f n -> (if (n <= 0) then 1 else (n * (f ((n - 1)))))) ((0 - 1))))))))))
-(5 * (4 * (3 * (2 * (1 * (if true then 1 else (0 * ((fix f n -> (if (n <= 0) then 1 else (n * (f ((n - 1)))))) ((0 - 1))))))))))
-(5 * (4 * (3 * (2 * (1 * 1)))))
-(5 * (4 * (3 * (2 * 1))))
-(5 * (4 * (3 * 2)))
-(5 * (4 * 6))
-(5 * 24)
-120
-
+$ ./compile.native max.src
+7
 ```
 
 Changelog
 ---------
+### [0.5] - 2018-02-24
+#### Added
+- A typechecking system
+- New expressions: unit, pair, and list
+- New CLI flag: `-type` to evalute the type of the expression(s) in the source code
+#### Changed
+- Parsing and interpreting mode (`parse` flag and no flag, respectively) now typechecks the code before parsing or interpreting.
+- `let`, `fun`, `fix`, and empty list declaration need to include type. See the grammar above for the specific changes.
+
 ### [0.4.1] - 2018-02-21
 #### Added
 - Several comparison operators (`==`, `>=`, `<`, `>`) and boolean operators (`&&`, `||`)
