@@ -20,14 +20,17 @@
 %token TLBrack TRBrack TDColon THd TTl TEmpty TList
 %token TSColon EOF
 
-%left TElse TIn TArrow 
-%left TAnd TOr 
+%left TIn TArrow
+%left TElse
+%left TOr
+%left TAnd
 %left TEq TGeq TLeq TLt TGt
+%right TDColon
 %left TPlus TMinus       
 %left TTimes TDiv
-%right TDColon
 %nonassoc TLParen
 %nonassoc TFst TSnd THd TTl TEmpty
+%right UMINUS
 %left TList
 
 %start parse                  /* the entry point */
@@ -73,7 +76,7 @@ expr:
   | TEmpty e = expr            { EEmpty (e) }
 
 bin_expr:
-  | TMinus e = expr            { EBop (OMinus, EInt 0, e) }
+  | TMinus e = expr %prec UMINUS { EBop (OMinus, EInt 0, e) }
   | e1 = expr TPlus e2 = expr  { EBop (OPlus, e1, e2) }
   | e1 = expr TMinus e2 = expr { EBop (OMinus, e1, e2) }
   | e1 = expr TTimes e2 = expr { EBop (OTimes, e1, e2) }
