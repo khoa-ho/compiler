@@ -45,7 +45,9 @@ let string_of_token (t:token) : string =
   | THd      -> "hd"
   | TTl      -> "tl"
   | TEmpty   -> "empty"
-  | TList    -> "list"
+  | TRef     -> "ref"
+  | TColonEq -> ":="
+  | TBang    -> "!"
   | TSColon  -> ";\n"
   | EOF      -> "EOF"
 
@@ -131,7 +133,9 @@ rule lex =
   | "hd"     { THd }
   | "tl"     { TTl }
   | "empty"  { TEmpty }
-  | "list"   { TList }
+  | "ref"    { TRef }
+  | ":="     { TColonEq }
+  | "!"      { TBang }
   | var      { TVar (lexeme lexbuf) }
   | ";"      { TSColon }
   | white    { lex lexbuf }

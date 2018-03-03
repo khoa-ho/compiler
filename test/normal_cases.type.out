@@ -47,8 +47,8 @@ int
 (bool -> (int * int))
 (int * int)
 int
-int list
-int list
+[int]
+[int]
 bool
 bool
 int

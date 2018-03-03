@@ -1,8 +1,12 @@
 open Printf
 
+module Context = Map.Make(String)
+module Environ = Map.Make(String)
+
 type bop = OPlus | OMinus | OTimes | ODiv 
          | OEq | OLeq | OGeq | OLt | OGt
          | OAnd | OOr
+         | OAsgn
 
 type typ =
   | TypUnit
@@ -13,6 +17,7 @@ type typ =
   | TypFunc of typ * typ
   | TypPair of typ * typ
   | TypList of typ
+  | TypRef  of typ
 
 type exp =
   | EUnit
@@ -30,11 +35,13 @@ type exp =
   | EPair  of exp * exp
   | EFst   of exp
   | ESnd   of exp
-  | ENil  of typ
+  | ENil   of typ
   | ECons  of exp * exp
   | EHd    of exp
   | ETl    of exp
   | EEmpty of exp
+  | ERef   of exp
+  | EDeref of exp
 
 let error err_msg =
   fprintf stderr "Error: %s\n" err_msg; exit 1
@@ -48,7 +55,8 @@ let rec string_of_typ (t:typ) : string =
   | TypBool  -> "bool"
   | TypPair (t1, t2) -> sprintf "(%s * %s)" (string_of_typ t1) (string_of_typ t2) 
   | TypFunc (t1, t2) -> sprintf "(%s -> %s)" (string_of_typ t1) (string_of_typ t2)
-  | TypList t -> string_of_typ t ^ " list"
+  | TypList t -> sprintf "[%s]" (string_of_typ t)
+  | TypRef t -> sprintf "<%s>" (string_of_typ t)
 
 let rec string_of_exp (e:exp) : string =
   match e with
@@ -61,11 +69,12 @@ let rec string_of_exp (e:exp) : string =
   | EPair (e1, e2)          -> string_of_pair e1 e2
   | EFst e'                 -> string_of_prefix_op "fst" e'
   | ESnd e'                 -> string_of_prefix_op "snd" e'
-  | ENil t                  -> string_of_list t
+  | ENil t                  -> string_of_nil t
   | ECons (e1, e2)          -> string_of_cons e1 e2
   | EHd e'                  -> string_of_prefix_op "hd" e'
   | ETl e'                  -> string_of_prefix_op "tl" e'
   | EEmpty e'               -> string_of_prefix_op "empty" e'
+  | EDeref e'               -> string_of_deref e'
   | e_terminal              -> string_of_terminal_exp e_terminal
 and string_of_bin_exp o e1 e2 =
   let op_str = string_of_bop o in
@@ -88,12 +97,14 @@ and string_of_pair e1 e2 =
   sprintf "(%s, %s)" (string_of_exp e1) (string_of_exp e2)
 and string_of_prefix_op o e =
   sprintf "(%s %s)" o (string_of_exp e)
-and string_of_list t =
+and string_of_nil t =
   sprintf "[] : %s" (string_of_typ t)
+and string_of_deref e =
+  sprintf "(!%s)" (string_of_exp e)
 and string_of_cons e1 e2 =
   let str2 = 
     match e2 with
-    | ENil t -> string_of_list t
+    | ENil t -> string_of_nil t
     | ECons (e1, e2) -> string_of_cons e1 e2
     | _ -> error (sprintf "Expected a cons, got %s" (string_of_exp e2))
   in
@@ -111,6 +122,7 @@ and string_of_bop o =
   | OGt    -> ">"
   | OAnd   -> "&&"
   | OOr    -> "||"
+  | OAsgn  -> ":="
 and string_of_terminal_exp e =
   match e with
   | EUnit    -> "()"
@@ -118,11 +130,10 @@ and string_of_terminal_exp e =
   | EInt n   -> string_of_int n
   | EFloat f -> string_of_float f
   | EBool b  -> string_of_bool b
+  | ERef e   -> "ref " ^ string_of_exp e
   | EVar x   -> x
   | _ -> failwith (sprintf "Expected a terminal expr for 'string_of_terminal_exp', got %s" 
                      (string_of_exp e))
-
-module Context = Map.Make(String)
 
 let rec typecheck (g:typ Context.t) (e:exp) : typ =
   match e with
@@ -157,12 +168,22 @@ let rec typecheck (g:typ Context.t) (e:exp) : typ =
           | _ -> error (sprintf "Expected type int or float in %s, got %s and %s" 
                           (string_of_exp e) (string_of_typ t1) (string_of_typ t2))
         end
-      | OAnd | OOr -> begin
-          match (t1, t2) with
+      | OAnd | OOr -> 
+        begin match (t1, t2) with
           | (TypBool, TypBool) -> TypBool
-          | _-> error (sprintf "Expect 2 boolean exprs for operator %s, got type %s and %s" 
+          | _-> error (sprintf "Expect 2 boolean for operator %s, got type %s and %s" 
                          (string_of_exp e) (string_of_typ t1) (string_of_typ t2))
         end
+      | OAsgn ->
+        let t = 
+          match t1 with
+          | TypRef t' -> t'
+          | _ -> error (sprintf "Expect type a' ref for %s, got type %s" 
+                          (string_of_exp e1) (string_of_typ t1))
+        in
+        if t2 = t then TypUnit
+        else error (sprintf "Expect type %s for %s, got type %s" 
+                      (string_of_typ t) (string_of_exp e2) (string_of_typ t2))
     end
   | EIf (e1, e2, e3) -> 
     let t1 = typecheck g e1 in
@@ -261,6 +282,14 @@ let rec typecheck (g:typ Context.t) (e:exp) : typ =
       | _ -> error (sprintf "Expected type a' list for %s in %s, got %s" 
                       (string_of_exp e') (string_of_exp e) (string_of_typ t'))
     end
+  | ERef e' -> TypRef (typecheck g e')
+  | EDeref e' ->
+    let t' = typecheck g e' in
+    begin match t' with
+      | TypRef t -> t
+      | _ -> error (sprintf "Expected type a' ref for %s in %s, got %s" 
+                      (string_of_exp e') (string_of_exp e) (string_of_typ t'))
+    end
 
 let rec subst (v:exp) (x:string) (e:exp) : exp =
   let sub expr = subst v x expr in
@@ -281,6 +310,8 @@ let rec subst (v:exp) (x:string) (e:exp) : exp =
   | EHd e'                 -> EHd (sub e')
   | ETl e'                 -> ETl (sub e')
   | EEmpty e'              -> EEmpty (sub e')
+  | ERef e'                -> ERef (sub e')
+  | EDeref e'              -> EDeref (sub e')
   | EVar x' when x = x'    -> v
   | e_without_var          -> e_without_var
 
@@ -292,6 +323,7 @@ and is_value (e:exp) : bool =
   | EFunc (_,_,_,_) | EFix (_,_,_,_,_) 
   | ENil _ | ECons (_,_) -> true
   | EPair (e1, e2) -> is_value e1 && is_value e2
+  | ERef e' -> is_value e'
   | _ -> false
 and step (e:exp) : exp =
   match e with

@@ -17,42 +17,44 @@
 %token TLet TAsgn TIn
 %token TFix TFunc TArrow
 %token TComma TFst TSnd
-%token TLBrack TRBrack TDColon THd TTl TEmpty TList
+%token TLBrack TRBrack TDColon THd TTl TEmpty
+%token TRef TColonEq TBang
 %token TSColon EOF
 
 %left TIn TArrow
 %left TElse
+%right TColonEq
 %left TOr
 %left TAnd
 %left TEq TGeq TLeq TLt TGt
 %right TDColon
 %left TPlus TMinus       
 %left TTimes TDiv
-%nonassoc TLParen
-%nonassoc TFst TSnd THd TTl TEmpty
 %right UMINUS
-%left TList
+%nonassoc TLParen
+%nonassoc TFst TSnd THd TTl TEmpty TRef
+%nonassoc TBang
 
 %start parse                  /* the entry point */
 %type <Lang.exp list> parse
 
 %%
 parse:
-  | stmt = statement EOF       { [stmt] }
-  | stmt = statement m = parse { stmt :: m }
+  | stmt = statement EOF         { [stmt] }
+  | stmt = statement m = parse   { stmt :: m }
 
 statement:
-  | e = expr TSColon           { e }
+  | e = expr TSColon             { e }
 
 expr:
-  | TLParen TRParen            { EUnit }
-  | TNan                       { ENan }
-  | i = TInt                   { EInt i }
-  | f = TFloat                 { EFloat f }
-  | b = TBool                  { EBool b }
-  | x = TVar                   { EVar x }
-  | TLParen e = expr TRParen   { e }
-  | e = bin_expr               { e }
+  | TLParen TRParen              { EUnit }
+  | TNan                         { ENan }
+| i = TInt                       { EInt i }
+  | f = TFloat                   { EFloat f }
+  | b = TBool                    { EBool b }
+  | x = TVar                     { EVar x }
+  | TLParen e = expr TRParen     { e }
+  | e = bin_expr                 { e }
   | TIf e1 = expr TThen e2 = expr TElse e3 = expr      
     { EIf (e1, e2, e3) }
   | TLet x = TVar t = typ_asgn TAsgn e1 = expr TIn e2 = expr
@@ -65,44 +67,46 @@ expr:
     { EApp (e1, e2) }
   | TLParen e1 = expr TComma e2 = expr TRParen
     { EPair (e1, e2) }
-  | TFst e = expr              { EFst e }
-  | TSnd e = expr              { ESnd e }
+  | TFst e = expr                { EFst e }
+  | TSnd e = expr                { ESnd e }
   | TLBrack TRBrack TColon t = typ %prec TDColon
     { ENil t } 
   | e1 = expr TDColon e2 = expr
     { ECons (e1, e2) }
-  | THd e = expr               { EHd (e) }
-  | TTl e = expr               { ETl (e) }
-  | TEmpty e = expr            { EEmpty (e) }
+  | THd e = expr                 { EHd e }
+  | TTl e = expr                 { ETl e }
+  | TEmpty e = expr              { EEmpty e }
+  | TRef e = expr                { ERef e }
+  | TBang e = expr               { EDeref e }
 
 bin_expr:
   | TMinus e = expr %prec UMINUS { EBop (OMinus, EInt 0, e) }
-  | e1 = expr TPlus e2 = expr  { EBop (OPlus, e1, e2) }
-  | e1 = expr TMinus e2 = expr { EBop (OMinus, e1, e2) }
-  | e1 = expr TTimes e2 = expr { EBop (OTimes, e1, e2) }
-  | e1 = expr TDiv e2 = expr   { EBop (ODiv, e1, e2) }
-  | e1 = expr TEq e2 = expr    { EBop (OEq, e1, e2) }
-  | e1 = expr TLeq e2 = expr   { EBop (OLeq, e1, e2) }
-  | e1 = expr TGeq e2 = expr   { EBop (OGeq, e1, e2) }
-  | e1 = expr TLt e2 = expr    { EBop (OLt, e1, e2) }
-  | e1 = expr TGt e2 = expr    { EBop (OGt, e1, e2) }
-  | e1 = expr TAnd e2 = expr   { EBop (OAnd, e1, e2) }
-  | e1 = expr TOr e2 = expr    { EBop (OOr, e1, e2) }
-
+  | e1 = expr TPlus e2 = expr    { EBop (OPlus, e1, e2) }
+  | e1 = expr TMinus e2 = expr   { EBop (OMinus, e1, e2) }
+  | e1 = expr TTimes e2 = expr   { EBop (OTimes, e1, e2) }
+  | e1 = expr TDiv e2 = expr     { EBop (ODiv, e1, e2) }
+  | e1 = expr TEq e2 = expr      { EBop (OEq, e1, e2) }
+  | e1 = expr TLeq e2 = expr     { EBop (OLeq, e1, e2) }
+  | e1 = expr TGeq e2 = expr     { EBop (OGeq, e1, e2) }
+  | e1 = expr TLt e2 = expr      { EBop (OLt, e1, e2) }
+  | e1 = expr TGt e2 = expr      { EBop (OGt, e1, e2) }
+  | e1 = expr TAnd e2 = expr     { EBop (OAnd, e1, e2) }
+  | e1 = expr TOr e2 = expr      { EBop (OOr, e1, e2) }
+  | e1 = expr TColonEq e2 = expr { EBop (OAsgn, e1, e2) }
 
 var_typ_asgn:
   | TLParen x = TVar ta = typ_asgn TRParen
     { { x=x; t1=ta } }
 
-
 typ_asgn:
-  | TColon t = typ             { t }
+  | TColon t = typ               { t }
 
 typ:
-  | TLParen t = typ TRParen    { t }
-  | TTypInt                    { TypInt }
-  | TTypFloat                  { TypFloat }
-  | TTypBool                   { TypBool }
-  | t1 = typ TTimes t2 = typ   { TypPair (t1, t2) }
-  | t1 = typ TArrow t2 = typ   { TypFunc (t1, t2) }
-  | t = typ TList              { TypList t }
+  | TLParen t = typ TRParen      { t }
+  | TTypInt                      { TypInt }
+  | TTypFloat                    { TypFloat }
+  | TTypBool                     { TypBool }
+  | t1 = typ TTimes t2 = typ     { TypPair (t1, t2) }
+  | t1 = typ TArrow t2 = typ     { TypFunc (t1, t2) }
+  | TLBrack t = typ TRBrack      { TypList t }
+  | TLt t = typ TGt              { TypRef t }
