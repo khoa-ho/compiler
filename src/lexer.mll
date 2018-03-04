@@ -48,7 +48,8 @@ let string_of_token (t:token) : string =
   | TRef     -> "ref"
   | TColonEq -> ":="
   | TBang    -> "!"
-  | TSColon  -> ";\n"
+  | TSColon  -> ";"
+  | THash    -> "#"
   | EOF      -> "EOF"
 
 let string_of_token_list (toks:token list) : string =
@@ -136,8 +137,9 @@ rule lex =
   | "ref"    { TRef }
   | ":="     { TColonEq }
   | "!"      { TBang }
-  | var      { TVar (lexeme lexbuf) }
   | ";"      { TSColon }
+  | "#"      { THash }
+  | var      { TVar (lexeme lexbuf) }
   | white    { lex lexbuf }
   | newline  { next_line lexbuf; lex lexbuf }
   | _        { raise (SyntaxError (Printf.sprintf "Unexpected char '%s' %s" (lexeme lexbuf) (position lexbuf))) }
