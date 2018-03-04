@@ -28,7 +28,7 @@ let compile filename =
     let ast_list = Parser.parse Lexer.lex lexbuf in
     let parse_mode ast =
       if !is_parsing then
-        Lang.string_of_exp ast |> print_endline
+        Lang.string_of_exp Lang.Environ.empty ast |> print_endline
       else if !is_typechecking then
         Lang.type_check ast |> Lang.string_of_typ |> print_endline
       else if !is_stepping then
@@ -39,7 +39,8 @@ let compile filename =
       else
         begin
           Lang.type_check ast |> ignore;
-          Lang.interpret ast |> Lang.string_of_exp |> print_endline
+          let state = Lang.interpret ast in
+          Lang.string_of_exp (Lang.fst state) (Lang.snd state) |> print_endline
         end
     in
     List.iter parse_mode ast_list

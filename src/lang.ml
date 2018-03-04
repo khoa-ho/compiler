@@ -62,64 +62,64 @@ let rec string_of_typ (t:typ) : string =
   | TypList t -> sprintf "[%s]" (string_of_typ t)
   | TypRef t -> sprintf "<%s>" (string_of_typ t)
 
-let rec string_of_exp (e:exp) : string =
+let rec string_of_exp g (e:exp) : string =
   match e with
-  | EBop (o, e1, e2)        -> string_of_bin_exp o e1 e2
-  | EIf (e1, e2, e3)        -> string_of_if e1 e2 e3
-  | ELet (x, t, v, e')      -> string_of_let x t v e'
-  | EFunc (x, t1, t2, e')   -> string_of_func x t1 t2 e'
-  | EFix (f, x, t1, t2, e') -> string_of_fix f x t1 t2 e'
-  | EApp (e1, e2)           -> string_of_func_app e1 e2
-  | EPair (e1, e2)          -> string_of_pair e1 e2
-  | EFst e'                 -> string_of_prefix_op "fst" e'
-  | ESnd e'                 -> string_of_prefix_op "snd" e'
-  | ENil t                  -> string_of_nil t
-  | ECons (e1, e2)          -> string_of_cons e1 e2
-  | EHd e'                  -> string_of_prefix_op "hd" e'
-  | ETl e'                  -> string_of_prefix_op "tl" e'
-  | EEmpty e'               -> string_of_prefix_op "empty" e'
-  | ERef e'                 -> string_of_prefix_op "ref" e'
-  | EAsgn (e1, e2)          -> string_of_asgn e1 e2
-  | EDeref e'               -> string_of_deref e'
-  | ESeq (e1, e2)           -> string_of_seq e1 e2
-  | e_terminal              -> string_of_terminal_exp e_terminal
-and string_of_bin_exp o e1 e2 =
+  | EBop (o, e1, e2)        -> string_of_bin_exp g o e1 e2
+  | EIf (e1, e2, e3)        -> string_of_if g e1 e2 e3
+  | ELet (x, t, v, e')      -> string_of_let g x t v e'
+  | EFunc (x, t1, t2, e')   -> string_of_func g x t1 t2 e'
+  | EFix (f, x, t1, t2, e') -> string_of_fix g f x t1 t2 e'
+  | EApp (e1, e2)           -> string_of_app g e1 e2
+  | EPair (e1, e2)          -> string_of_pair g e1 e2
+  | EFst e'                 -> string_of_prefix_op g "fst" e'
+  | ESnd e'                 -> string_of_prefix_op g "snd" e'
+  | ENil t                  -> string_of_nil g t
+  | ECons (e1, e2)          -> string_of_cons g e1 e2
+  | EHd e'                  -> string_of_prefix_op g "hd" e'
+  | ETl e'                  -> string_of_prefix_op g "tl" e'
+  | EEmpty e'               -> string_of_prefix_op g "empty" e'
+  | ERef e'                 -> string_of_prefix_op g "ref" e'
+  | EAsgn (e1, e2)          -> string_of_asgn g e1 e2
+  | EDeref e'               -> string_of_deref g e'
+  | ESeq (e1, e2)           -> string_of_seq g e1 e2
+  | e_terminal              -> string_of_terminal_exp g e_terminal
+and string_of_bin_exp g o e1 e2 =
   let op_str = string_of_bop o in
-  sprintf "(%s %s %s)" (string_of_exp e1) op_str (string_of_exp e2) 
-and string_of_if e1 e2 e3 =
+  sprintf "(%s %s %s)" (string_of_exp g e1) op_str (string_of_exp g e2) 
+and string_of_if g e1 e2 e3 =
   sprintf "(if %s then %s else %s)" 
-    (string_of_exp e1) (string_of_exp e2) (string_of_exp e3)
-and string_of_let x t e1 e2 =
+    (string_of_exp g e1) (string_of_exp g e2) (string_of_exp g e3)
+and string_of_let g x t e1 e2 =
   sprintf "(let %s : %s = %s in %s)" 
-    x (string_of_typ t) (string_of_exp e1) (string_of_exp e2)
-and string_of_func x t1 t2 e =
+    x (string_of_typ t) (string_of_exp g e1) (string_of_exp g e2)
+and string_of_func g x t1 t2 e =
   sprintf "(fun (%s:%s) : %s -> %s)" 
-    x (string_of_typ t1) (string_of_typ t2) (string_of_exp e)
-and string_of_fix f x t1 t2 e =
+    x (string_of_typ t1) (string_of_typ t2) (string_of_exp g e)
+and string_of_fix g f x t1 t2 e =
   sprintf "(fix %s (%s:%s) : %s -> %s)" 
-    f x (string_of_typ t1) (string_of_typ t2) (string_of_exp e)
-and string_of_func_app e1 e2 =
-  sprintf "(%s (%s))" (string_of_exp e1) (string_of_exp e2)
-and string_of_pair e1 e2 =
-  sprintf "(%s, %s)" (string_of_exp e1) (string_of_exp e2)
-and string_of_prefix_op o e =
-  sprintf "(%s %s)" o (string_of_exp e)
-and string_of_nil t =
+    f x (string_of_typ t1) (string_of_typ t2) (string_of_exp g e)
+and string_of_app g e1 e2 =
+  sprintf "(%s (%s))" (string_of_exp g e1) (string_of_exp g e2)
+and string_of_pair g e1 e2 =
+  sprintf "(%s, %s)" (string_of_exp g e1) (string_of_exp g e2)
+and string_of_prefix_op g o e =
+  sprintf "(%s %s)" o (string_of_exp g e)
+and string_of_nil g t =
   sprintf "[] : %s" (string_of_typ t)
-and string_of_cons e1 e2 =
+and string_of_cons g e1 e2 =
   let str2 = 
     match e2 with
-    | ENil t -> string_of_nil t
-    | ECons (e1, e2) -> string_of_cons e1 e2
-    | _ -> error (sprintf "Expected a cons, got %s" (string_of_exp e2))
+    | ENil t -> string_of_nil g t
+    | ECons (e1, e2) -> string_of_cons g e1 e2
+    | _ -> error (sprintf "Expected a cons, got %s" (string_of_exp g e2))
   in
-  sprintf "(%s :: %s)" (string_of_exp e1) str2
-and string_of_asgn e1 e2 =
-  sprintf "(%s := %s)" (string_of_exp e1) (string_of_exp e2)
-and string_of_deref e =
-  sprintf "(!%s)" (string_of_exp e)
-and string_of_seq e1 e2 =
-  sprintf "(%s; %s)" (string_of_exp e1) (string_of_exp e2)
+  sprintf "(%s :: %s)" (string_of_exp g e1) str2
+and string_of_asgn g e1 e2 =
+  sprintf "(%s := %s)" (string_of_exp g e1) (string_of_exp g e2)
+and string_of_deref g e =
+  sprintf "(!%s)" (string_of_exp g e)
+and string_of_seq g e1 e2 =
+  sprintf "(%s; %s)" (string_of_exp g e1) (string_of_exp g e2)
 and string_of_bop o =
   match o with
   | OPlus  -> "+"
@@ -133,7 +133,7 @@ and string_of_bop o =
   | OGt    -> ">"
   | OAnd   -> "&&"
   | OOr    -> "||"
-and string_of_terminal_exp e =
+and string_of_terminal_exp g e =
   match e with
   | EUnit    -> "()"
   | ENan     -> "NaN"
@@ -141,11 +141,12 @@ and string_of_terminal_exp e =
   | EFloat f -> string_of_float f
   | EBool b  -> string_of_bool b
   | EVar x   -> x
-  | Ptr n    -> sprintf "Ptr(%s)" (string_of_int n)
-  | _ -> failwith (sprintf "Expected a terminal expr for 'string_of_terminal_exp', got %s" 
-                     (string_of_exp e))
+  | Ptr n    -> sprintf "Ptr(%d):{contents = %s}" n (string_of_exp g (Environ.find n g))
+  | _ -> failwith (sprintf "Expected a terminal expr for 'string_of_terminal_exp g', got %s" 
+                     (string_of_exp g e))
 
 let rec typecheck (g:typ Context.t) (e:exp) : typ =
+  let string_of_exp e = string_of_exp Environ.empty e  in
   match e with
   | EUnit    -> TypUnit
   | ENan     -> TypNan
@@ -346,8 +347,8 @@ let fst (s:exp Environ.t * exp) =
 let snd (s:exp Environ.t * exp) =
   match s with (_, e) -> e
 
-let rec eval (g:exp Environ.t) (e:exp) : exp =
-  if is_value e then e
+let rec eval (g:exp Environ.t) (e:exp) : (exp Environ.t * exp) =
+  if is_value e then (g, e)
   else let s = step g e in eval (fst s) (snd s)
 and is_value (e:exp) : bool =
   match e with
@@ -384,7 +385,7 @@ and step_bin_exp g o e1 e2 =
       | (EFloat f1, EFloat f2) -> step_float_bin_exp o f1 f2
       | (EBool b1, EBool b2)   -> step_bool_bin_exp o b1 b2
       | _ -> error (sprintf "Expected 2 numbers or 2 booleans, got %s and %s" 
-                      (string_of_exp e1) (string_of_exp e2))
+                      (string_of_exp g e1) (string_of_exp g e2))
     in g, v
   else if is_value e1 then 
     let s = step g e2 in fst s, EBop (o, e1, snd s)
@@ -411,7 +412,7 @@ and step_func_app g e1 e2 =
       match e1 with
       | EFunc (x, t1, t2, e3)   -> subst e2 x e3
       | EFix (f, x, t1, t2, e3) -> subst e1 f (subst e2 x e3)
-      | _ -> error (sprintf "Expected a function, got %s" (string_of_exp e1))
+      | _ -> error (sprintf "Expected a function, got %s" (string_of_exp g e1))
     in g, e
   else if is_value e1 then 
     let s = step g e2 in fst s, EApp (e1, snd s)
@@ -427,28 +428,28 @@ and step_fst g e =
   if is_value e then 
     match e with
     | EPair (e1, _) -> g, e1
-    | _ -> error (sprintf "Expected a pair, got %s" (string_of_exp e))
+    | _ -> error (sprintf "Expected a pair, got %s" (string_of_exp g e))
   else 
     let s = step g e in fst s, EFst (snd s)
 and step_snd g e =
   if is_value e then 
     match e with
     | EPair (_, e2) -> g, e2
-    | _ -> error (sprintf "Expected a pair, got %s" (string_of_exp e))
+    | _ -> error (sprintf "Expected a pair, got %s" (string_of_exp g e))
   else 
     let s = step g e in fst s, ESnd (snd s)
 and step_hd g e =
   if is_value e then 
     match e with
     | ECons (e1, _) -> g, e1
-    | _ -> error (sprintf "Expected a list, got %s" (string_of_exp e))
+    | _ -> error (sprintf "Expected a list, got %s" (string_of_exp g e))
   else 
     let s = step g e in fst s, EHd (snd s)
 and step_tl g e =
   if is_value e then 
     match e with
     | ECons (_, e2) -> g, e2
-    | _ -> error (sprintf "Expected a list, got %s" (string_of_exp e))
+    | _ -> error (sprintf "Expected a list, got %s" (string_of_exp g e))
   else 
     let s = step g e in fst s, ETl (snd s)
 and step_empty g e =
@@ -457,7 +458,7 @@ and step_empty g e =
       match e with
       | ENil _       -> EBool true
       | ECons (_, _) -> EBool false
-      | _ -> error (sprintf "Expected a list, got %s" (string_of_exp e))
+      | _ -> error (sprintf "Expected a list, got %s" (string_of_exp g e))
     in g, v
   else 
     let s = step g e in fst s, EEmpty (snd s)
@@ -472,7 +473,7 @@ and step_asgn g e1 e2 =
   if is_value e1 && is_value e2 then
     match e1 with
     | Ptr n -> Environ.add n e2 g, EUnit
-    | _ -> error (sprintf "Expected a ref cell, got %s" (string_of_exp e1))
+    | _ -> error (sprintf "Expected a ref cell, got %s" (string_of_exp g e1))
   else if is_value e1 then
     let s = step g e2 in fst s, EAsgn (e1, snd s)
   else
@@ -481,7 +482,7 @@ and step_deref g e =
   if is_value e then
     match e with
     | Ptr n -> g, Environ.find n g
-    | _ -> error (sprintf "Expected a ref cell, got %s" (string_of_exp e))
+    | _ -> error (sprintf "Expected a ref cell, got %s" (string_of_exp g e))
   else
     let s = step g e in fst s, EDeref (snd s)
 and step_seq g e1 e2 =
@@ -533,13 +534,13 @@ and step_bool_bin_exp o b1 b2 =
 
 let rec eval_step (g:exp Environ.t) (e:exp) : unit =
   if is_value e then 
-    string_of_exp e |> print_endline
+    string_of_exp g e |> print_endline
   else begin 
-    string_of_exp e |> print_endline;
+    string_of_exp g e |> print_endline;
     let s = step g e in eval_step (fst s) (snd s)
   end
 
-let interpret (e:exp) : exp =
+let interpret (e:exp) : (exp Environ.t * exp) =
   eval Environ.empty e
 
 let interpret_step (e:exp) : unit =
