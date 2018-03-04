@@ -224,3 +224,16 @@ Ptr(0):{contents = 6}
 ((); (!Ptr(5):{contents = 4}))
 (!Ptr(5):{contents = 4})
 4
+(let x : <int> = (ref 6) in (let y : <int> = (ref 3) in ((y := ((!x) * (!y))); ((!x) + (!y)))))
+(let x : <int> = Ptr(6):{contents = 6} in (let y : <int> = (ref 3) in ((y := ((!x) * (!y))); ((!x) + (!y)))))
+(let y : <int> = (ref 3) in ((y := ((!Ptr(6):{contents = 6}) * (!y))); ((!Ptr(6):{contents = 6}) + (!y))))
+(let y : <int> = Ptr(7):{contents = 3} in ((y := ((!Ptr(6):{contents = 6}) * (!y))); ((!Ptr(6):{contents = 6}) + (!y))))
+((Ptr(7):{contents = 3} := ((!Ptr(6):{contents = 6}) * (!Ptr(7):{contents = 3}))); ((!Ptr(6):{contents = 6}) + (!Ptr(7):{contents = 3})))
+((Ptr(7):{contents = 3} := (6 * (!Ptr(7):{contents = 3}))); ((!Ptr(6):{contents = 6}) + (!Ptr(7):{contents = 3})))
+((Ptr(7):{contents = 3} := (6 * 3)); ((!Ptr(6):{contents = 6}) + (!Ptr(7):{contents = 3})))
+((Ptr(7):{contents = 3} := 18); ((!Ptr(6):{contents = 6}) + (!Ptr(7):{contents = 3})))
+((); ((!Ptr(6):{contents = 6}) + (!Ptr(7):{contents = 18})))
+((!Ptr(6):{contents = 6}) + (!Ptr(7):{contents = 18}))
+(6 + (!Ptr(7):{contents = 18}))
+(6 + 18)
+24

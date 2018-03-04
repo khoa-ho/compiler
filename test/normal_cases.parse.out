@@ -58,3 +58,4 @@ false
 (let x : <int> = (ref 1) in ((!x) + 1))
 (let x : <int> = (ref 1) in ((x := 3); ((!x) + 1)))
 (let x : <int> = (ref 1) in ((x := 3); ((x := ((!x) + 1)); (!x))))
+(let x : <int> = (ref 6) in (let y : <int> = (ref 3) in ((y := ((!x) * (!y))); ((!x) + (!y)))))
