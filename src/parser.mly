@@ -18,10 +18,11 @@
 %token TFix TFunc TArrow
 %token TComma TFst TSnd
 %token TLBrack TRBrack TDColon THd TTl TEmpty
-%token TRef TColonEq TBang
-%token TSColon EOF
+%token TRef TColonEq TBang TSColon
+%token THash EOF
 
 %left TIn TArrow
+%right TSColon
 %left TElse
 %right TColonEq
 %left TOr
@@ -44,12 +45,12 @@ parse:
   | stmt = statement m = parse   { stmt :: m }
 
 statement:
-  | e = expr TSColon             { e }
+  | e = expr THash               { e }
 
 expr:
   | TLParen TRParen              { EUnit }
   | TNan                         { ENan }
-| i = TInt                       { EInt i }
+  | i = TInt                       { EInt i }
   | f = TFloat                   { EFloat f }
   | b = TBool                    { EBool b }
   | x = TVar                     { EVar x }
@@ -77,7 +78,9 @@ expr:
   | TTl e = expr                 { ETl e }
   | TEmpty e = expr              { EEmpty e }
   | TRef e = expr                { ERef e }
+  | e1 = expr TColonEq e2 = expr { EAsgn (e1, e2) }
   | TBang e = expr               { EDeref e }
+  | e1 = expr TSColon e2 = expr  { ESeq (e1, e2) }
 
 bin_expr:
   | TMinus e = expr %prec UMINUS { EBop (OMinus, EInt 0, e) }
@@ -92,7 +95,6 @@ bin_expr:
   | e1 = expr TGt e2 = expr      { EBop (OGt, e1, e2) }
   | e1 = expr TAnd e2 = expr     { EBop (OAnd, e1, e2) }
   | e1 = expr TOr e2 = expr      { EBop (OOr, e1, e2) }
-  | e1 = expr TColonEq e2 = expr { EBop (OAsgn, e1, e2) }
 
 var_typ_asgn:
   | TLParen x = TVar ta = typ_asgn TRParen

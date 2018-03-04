@@ -30,15 +30,15 @@ let compile filename =
       if !is_parsing then
         Lang.string_of_exp ast |> print_endline
       else if !is_typechecking then
-        Lang.typecheck Lang.Context.empty ast |> Lang.string_of_typ |> print_endline
+        Lang.type_check ast |> Lang.string_of_typ |> print_endline
       else if !is_stepping then
         begin
-          Lang.typecheck Lang.Context.empty ast |> ignore;
-          Lang.step_interpret ast
+          Lang.type_check ast |> ignore;
+          Lang.interpret_step ast
         end
       else
         begin
-          Lang.typecheck Lang.Context.empty ast |> ignore;
+          Lang.type_check ast |> ignore;
           Lang.interpret ast |> Lang.string_of_exp |> print_endline
         end
     in
