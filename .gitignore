@@ -24,3 +24,4 @@ ex_io.ml
 # Testing
 temp*
 *.try
+retest*

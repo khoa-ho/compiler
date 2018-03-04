@@ -93,8 +93,9 @@ max (0) (4 :: 7 :: 2 :: 1 :: [] : int)#
 ref 6#
 !ref 3#
 ref 0:=1#
-let x:<int> = ref 1 in !x + 1#
-let x:<int> = ref 1 in x := 3; !x + 1#
-let x:<int> = ref 1 in x := 3; x := !x + 1; !x#
-let x:<int> = ref 6 in let y:<int> = ref 3 in y := !x * !y; !x + !y#
+let x : <int> = ref 1 in !x + 1#
+let x : <int> = ref 1 in x := 3; !x + 1#
+let x : <int> = ref 1 in x := 3; x := !x + 1; !x#
+let x : <int> = ref 6 in let y:<int> = ref 3 in y := !x * !y; !x + !y#
 
+let x : <int> = ref 0 in while !x < 4 do x := !x + 1 end#
