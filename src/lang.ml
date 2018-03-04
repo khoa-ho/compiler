@@ -81,6 +81,7 @@ let rec string_of_exp (e:exp) : string =
   | ERef e'                 -> string_of_prefix_op "ref" e'
   | EAsgn (e1, e2)          -> string_of_asgn e1 e2
   | EDeref e'               -> string_of_deref e'
+  | ESeq (e1, e2)           -> string_of_seq e1 e2
   | e_terminal              -> string_of_terminal_exp e_terminal
 and string_of_bin_exp o e1 e2 =
   let op_str = string_of_bop o in
@@ -117,6 +118,8 @@ and string_of_asgn e1 e2 =
   sprintf "(%s := %s)" (string_of_exp e1) (string_of_exp e2)
 and string_of_deref e =
   sprintf "(!%s)" (string_of_exp e)
+and string_of_seq e1 e2 =
+  sprintf "(%s; %s)" (string_of_exp e1) (string_of_exp e2)
 and string_of_bop o =
   match o with
   | OPlus  -> "+"
@@ -137,8 +140,8 @@ and string_of_terminal_exp e =
   | EInt n   -> string_of_int n
   | EFloat f -> string_of_float f
   | EBool b  -> string_of_bool b
-  | ERef e   -> "ref " ^ string_of_exp e
   | EVar x   -> x
+  | Ptr n    -> sprintf "Ptr(%s)" (string_of_int n)
   | _ -> failwith (sprintf "Expected a terminal expr for 'string_of_terminal_exp', got %s" 
                      (string_of_exp e))
 
@@ -245,7 +248,6 @@ let rec typecheck (g:typ Context.t) (e:exp) : typ =
     end
   | ENil t -> TypList t
   | ECons (e1, e2) ->
-    let t1 = typecheck g e1 in
     let t2 = typecheck g e2 in
     let t = 
       begin match t2 with
@@ -254,6 +256,7 @@ let rec typecheck (g:typ Context.t) (e:exp) : typ =
                         (string_of_exp e1) (string_of_exp e) (string_of_typ t2))
       end
     in
+    let t1 = typecheck g e1 in
     if t1 = t then t2
     else 
       error (sprintf "Expected type %s for %s in %s, got %s" 
@@ -282,13 +285,13 @@ let rec typecheck (g:typ Context.t) (e:exp) : typ =
   | ERef e' -> TypRef (typecheck g e')
   | EAsgn (e1, e2) ->
     let t1 = typecheck g e1 in
-    let t2 = typecheck g e2 in
     let t = 
       match t1 with
       | TypRef t' -> t'
       | _ -> error (sprintf "Expect type a' ref for %s, got type %s" 
                       (string_of_exp e1) (string_of_typ t1))
     in
+    let t2 = typecheck g e2 in
     if t2 = t then TypUnit
     else error (sprintf "Expect type %s for %s, got type %s" 
                   (string_of_typ t) (string_of_exp e2) (string_of_typ t2))
@@ -298,6 +301,13 @@ let rec typecheck (g:typ Context.t) (e:exp) : typ =
       | TypRef t -> t
       | _ -> error (sprintf "Expected type a' ref for %s in %s, got %s" 
                       (string_of_exp e') (string_of_exp e) (string_of_typ t'))
+    end
+  | ESeq (e1, e2) ->
+    let t1 = typecheck g e1 in
+    begin match t1 with
+      | TypUnit -> typecheck g e2
+      | _ -> error (sprintf "Expected type unit for %s in %s, got %s" 
+                      (string_of_exp e1) (string_of_exp e) (string_of_typ t1))
     end
   | Ptr n -> failwith ""
 
@@ -324,7 +334,9 @@ let rec subst (v:exp) (x:string) (e:exp) : exp =
   | ETl e'                 -> ETl (sub e')
   | EEmpty e'              -> EEmpty (sub e')
   | ERef e'                -> ERef (sub e')
+  | EAsgn (e1, e2)         -> EAsgn (sub e1, sub e2)
   | EDeref e'              -> EDeref (sub e')
+  | ESeq (e1, e2)          -> ESeq (sub e1, sub e2)
   | EVar x' when x = x'    -> v
   | e_without_var          -> e_without_var
 
@@ -360,6 +372,7 @@ and step (g:exp Environ.t) (e:exp) : (exp Environ.t * exp) =
   | ERef e'                 -> step_ref g e'
   | EAsgn (e1, e2)          -> step_asgn g e1 e2
   | EDeref e'               -> step_deref g e'
+  | ESeq (e1, e2)           -> step_seq g e1 e2
   | e_terminal              -> g, e_terminal
 and step_bin_exp g o e1 e2 =
   if is_value e1 && is_value e2 then
@@ -471,6 +484,10 @@ and step_deref g e =
     | _ -> error (sprintf "Expected a ref cell, got %s" (string_of_exp e))
   else
     let s = step g e in fst s, EDeref (snd s)
+and step_seq g e1 e2 =
+  if is_value e1 then g, e2
+  else 
+    let s = step g e1 in fst s, ESeq (snd s, e2)
 and step_int_bin_exp o n1 n2 =
   match o with
   | OPlus  -> EInt (n1 + n2)
