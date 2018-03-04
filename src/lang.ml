@@ -24,6 +24,7 @@ type exp =
   | EInt   of int
   | EFloat of float
   | EBool  of bool
+  | Ptr    of int
   | EBop   of bop * exp * exp
   | EIf    of exp * exp * exp
   | EVar   of string
@@ -43,7 +44,7 @@ type exp =
   | EAsgn  of exp * exp
   | EDeref of exp
   | ESeq   of exp * exp
-  | Ptr    of int
+  | EWhile of exp * exp
 
 let cur_address = ref 0
 
@@ -82,6 +83,7 @@ let rec string_of_exp g (e:exp) : string =
   | EAsgn (e1, e2)          -> string_of_asgn g e1 e2
   | EDeref e'               -> string_of_deref g e'
   | ESeq (e1, e2)           -> string_of_seq g e1 e2
+  | EWhile (e1, e2)         -> string_of_while g e1 e2
   | e_terminal              -> string_of_terminal_exp g e_terminal
 and string_of_bin_exp g o e1 e2 =
   let op_str = string_of_bop o in
@@ -120,6 +122,8 @@ and string_of_deref g e =
   sprintf "(!%s)" (string_of_exp g e)
 and string_of_seq g e1 e2 =
   sprintf "(%s; %s)" (string_of_exp g e1) (string_of_exp g e2)
+and string_of_while g e1 e2 =
+  sprintf "(while %s do %s end)" (string_of_exp g e1) (string_of_exp g e2)
 and string_of_bop o =
   match o with
   | OPlus  -> "+"
@@ -310,7 +314,17 @@ let rec typecheck (g:typ Context.t) (e:exp) : typ =
       | _ -> error (sprintf "Expected type unit for %s in %s, got %s" 
                       (string_of_exp e1) (string_of_exp e) (string_of_typ t1))
     end
-  | Ptr n -> failwith ""
+  | EWhile (e1, e2) ->
+    let t1 = typecheck g e1 in
+    let t2 = typecheck g e2 in
+    if t1 <> TypBool then 
+      error (sprintf "Expected type bool for cond. guard of %s, got type %s"
+               (string_of_exp e) (string_of_typ t1))
+    else if t2 <> TypUnit then 
+      error (sprintf "Expected type unit for %s in %s, got type %s"
+               (string_of_exp e2) (string_of_exp e) (string_of_typ t2))
+    else TypUnit 
+  | Ptr n -> failwith "Pointer type"
 
 let type_check (e:exp) : typ =
   typecheck Context.empty e
@@ -338,6 +352,7 @@ let rec subst (v:exp) (x:string) (e:exp) : exp =
   | EAsgn (e1, e2)         -> EAsgn (sub e1, sub e2)
   | EDeref e'              -> EDeref (sub e')
   | ESeq (e1, e2)          -> ESeq (sub e1, sub e2)
+  | EWhile (e1, e2)        -> EWhile (sub e1, sub e2)
   | EVar x' when x = x'    -> v
   | e_without_var          -> e_without_var
 
@@ -374,6 +389,7 @@ and step (g:exp Environ.t) (e:exp) : (exp Environ.t * exp) =
   | EAsgn (e1, e2)          -> step_asgn g e1 e2
   | EDeref e'               -> step_deref g e'
   | ESeq (e1, e2)           -> step_seq g e1 e2
+  | EWhile (e1, e2)         -> step_while g e1 e2
   | e_terminal              -> g, e_terminal
 and step_bin_exp g o e1 e2 =
   if is_value e1 && is_value e2 then
@@ -489,6 +505,15 @@ and step_seq g e1 e2 =
   if is_value e1 then g, e2
   else 
     let s = step g e1 in fst s, ESeq (snd s, e2)
+and step_while g e1 e2 =
+  let s = eval g e1 in
+  let g = fst s in
+  let v1 = snd s in  
+  match v1 with
+  | EBool b ->
+    if b then g, ESeq(e2, EWhile(e1,e2))
+    else g, EUnit
+  | _ -> error (sprintf "Expected a boolean, got %s" (string_of_exp g e1))
 and step_int_bin_exp o n1 n2 =
   match o with
   | OPlus  -> EInt (n1 + n2)

@@ -19,6 +19,7 @@
 %token TComma TFst TSnd
 %token TLBrack TRBrack TDColon THd TTl TEmpty
 %token TRef TColonEq TBang TSColon
+%token TWhile TDo TEnd
 %token THash EOF
 
 %left TIn TArrow
@@ -81,6 +82,8 @@ expr:
   | e1 = expr TColonEq e2 = expr { EAsgn (e1, e2) }
   | TBang e = expr               { EDeref e }
   | e1 = expr TSColon e2 = expr  { ESeq (e1, e2) }
+  | TWhile e1 = expr TDo e2 = expr TEnd
+    { EWhile (e1, e2) }
 
 bin_expr:
   | TMinus e = expr %prec UMINUS { EBop (OMinus, EInt 0, e) }

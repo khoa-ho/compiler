@@ -49,6 +49,9 @@ let string_of_token (t:token) : string =
   | TColonEq -> ":="
   | TBang    -> "!"
   | TSColon  -> ";"
+  | TWhile   -> "while"
+  | TDo      -> "do"
+  | TEnd     -> "end"
   | THash    -> "#"
   | EOF      -> "EOF"
 
@@ -138,6 +141,9 @@ rule lex =
   | ":="     { TColonEq }
   | "!"      { TBang }
   | ";"      { TSColon }
+  | "while"  { TWhile }
+  | "do"     { TDo }
+  | "end"    { TEnd }
   | "#"      { THash }
   | var      { TVar (lexeme lexbuf) }
   | white    { lex lexbuf }
