@@ -43,23 +43,26 @@ To compile more than 1 file, just add all the source_file_paths separated by spa
 Currently, the language supports the following grammar:
 
 ```
-e ::= n | b | () | NaN | x | (e1 (+) e2) | if e1 then e2 else e3 
+e ::= () | NaN | n | b | x | (e1 (+) e2) | if e1 then e2 else e3 
     | let x : t = e1 in e2 | fun (x:t1) : t2 -> e | fix f (x:t1) : t2 -> e | e1 (e2)
     | (e1, e2) | fst e | snd e |
     | [] : t | e1 :: e2 | hd e | tl e | empty e
+    | ref e | e1 := e2 | !e | e1 ; e2 | while e1 do e2 end
+    | new t[n] | e1[e2] | e1 := e2
 
 (+) ::= + | - | * | / | == | <= | >= | < | > | && | ||
 
-t ::= int | bool | t1 -> t2 | unit | t1 * t2 | [t] 
+t ::= unit | nan | int | float | bool | t1 -> t2 |  
+    | t1 * t2 | [t] | <t> | array<t>
 ```  
 
 #### Following is an example 
 
-Let the sourcefile be `max.src`:
+Let the sourcefile be `example.src`:
 ```
-let max : int->(int list->int) =
-  fix f (cur_max:int) : int list->int ->
-    fun (l:int list) : int ->
+let max : int->([int]->int) =
+  fix f (cur_max:int) : [int]->int ->
+    fun (l:[int]) : int ->
     if (empty l) then
       cur_max
     else
@@ -69,16 +72,34 @@ let max : int->(int list->int) =
       else
         f (cur_max) (tl l)
 in 
-max (0) (4 :: 7 :: 2 :: 1 :: [] : int);
+max (0) (4 :: 7 :: 2 :: 1 :: [] : int)#
+
+let n : int = 10 in
+let x : array<int> = new int[n] in 
+let y : <int> = ref 0 in
+while !y < n do
+  x[!y] := !y * !y;
+  y := !y + 1
+end;
+x#
 ```
 Then
 ```
-$ ./compile.native max.src
+$ ./compile.native example.src
 7
+[Ptr(0):{0}, Ptr(1):{1}, Ptr(2):{4}, Ptr(3):{9}, Ptr(4):{16}, Ptr(5):{25}, Ptr(6):{36}, Ptr(7):{49}, Ptr(8):{64}, Ptr(9):{81}]
 ```
 
 Changelog
 ---------
+### [0.6] - 2018-03-07
+#### Added
+- Reference cell, a mutatble data structure
+- Imperative programming features such as assignment, sequence, and while loop
+- Array creation and access
+#### Changed
+- Statements are now ended with `#` rather than `;`, which is reserved for the sequence operator
+
 ### [0.5] - 2018-02-24
 #### Added
 - A typechecking system
