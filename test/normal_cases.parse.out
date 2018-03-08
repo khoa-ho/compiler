@@ -60,3 +60,4 @@ false
 (let x : <int> = (ref 1) in ((x := 3); ((x := ((!x) + 1)); (!x))))
 (let x : <int> = (ref 6) in (let y : <int> = (ref 3) in ((y := ((!x) * (!y))); ((!x) + (!y)))))
 (let x : <int> = (ref 0) in (while ((!x) < 4) do (x := ((!x) + 1)) end))
+(let n : int = 10 in (let x : array<int> = (new int[n]) in (let y : <int> = (ref 0) in ((while ((!y) < n) do ((x[(!y)] := ((!y) * (!y))); (y := ((!y) + 1))) end); x))))
