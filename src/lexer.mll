@@ -52,6 +52,8 @@ let string_of_token (t:token) : string =
   | TWhile   -> "while"
   | TDo      -> "do"
   | TEnd     -> "end"
+  | TNew     -> "new"
+  | TArr     -> "array"
   | THash    -> "#"
   | EOF      -> "EOF"
 
@@ -144,6 +146,8 @@ rule lex =
   | "while"  { TWhile }
   | "do"     { TDo }
   | "end"    { TEnd }
+  | "new"    { TNew }
+  | "array"  { TArr }
   | "#"      { THash }
   | var      { TVar (lexeme lexbuf) }
   | white    { lex lexbuf }

@@ -20,6 +20,7 @@
 %token TLBrack TRBrack TDColon THd TTl TEmpty
 %token TRef TColonEq TBang TSColon
 %token TWhile TDo TEnd
+%token TNew TArr
 %token THash EOF
 
 %left TIn TArrow
@@ -33,7 +34,7 @@
 %left TPlus TMinus       
 %left TTimes TDiv
 %right UMINUS
-%nonassoc TLParen
+%nonassoc TLParen TLBrack
 %nonassoc TFst TSnd THd TTl TEmpty TRef
 %nonassoc TBang
 
@@ -51,7 +52,7 @@ statement:
 expr:
   | TLParen TRParen              { EUnit }
   | TNan                         { ENan }
-  | i = TInt                       { EInt i }
+  | i = TInt                     { EInt i }
   | f = TFloat                   { EFloat f }
   | b = TBool                    { EBool b }
   | x = TVar                     { EVar x }
@@ -84,6 +85,10 @@ expr:
   | e1 = expr TSColon e2 = expr  { ESeq (e1, e2) }
   | TWhile e1 = expr TDo e2 = expr TEnd
     { EWhile (e1, e2) }
+  | TNew t = typ TLBrack e = expr TRBrack
+    { EArr (t, e)}
+  | e1 = expr TLBrack e2 = expr TRBrack
+    { EAcs (e1, e2) }
 
 bin_expr:
   | TMinus e = expr %prec UMINUS { EBop (OMinus, EInt 0, e) }
@@ -115,3 +120,4 @@ typ:
   | t1 = typ TArrow t2 = typ     { TypFunc (t1, t2) }
   | TLBrack t = typ TRBrack      { TypList t }
   | TLt t = typ TGt              { TypRef t }
+  | TArr TLt t = typ TGt         { TypArr t }
