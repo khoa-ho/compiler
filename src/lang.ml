@@ -137,8 +137,6 @@ and string_of_arr g t e =
   sprintf "(new %s[%s])" (string_of_typ t) (string_of_exp g e)
 and string_of_acs g e1 e2 =
   sprintf "%s[%s]" (string_of_exp g e1) (string_of_exp g e2)
-(*and string_of_ptr g n =
-  sprintf "Ptr(%d):{contents = %s}" n (string_of_exp g (Environ.find n g))*)
 and string_of_ptr g n =
   sprintf "Ptr(%d):{%s}" n (string_of_exp g (Environ.find n g))
 and string_of_arr_ptr g n len =
@@ -416,24 +414,24 @@ and is_value (e:exp) : bool =
   | _ -> false
 and step (g:exp Environ.t) (e:exp) : (exp Environ.t * exp) =
   match e with
-  | EBop (o, e1, e2)        -> step_bin_exp g o e1 e2
-  | EIf (e1, e2, e3)        -> step_if g e1 e2 e3
-  | ELet (x, t, e1, e2)     -> step_let g x t e1 e2
-  | EApp (e1, e2)           -> step_func_app g e1 e2
-  | EPair (e1, e2)          -> step_pair g e1 e2
-  | EFst e'                 -> step_fst g e'
-  | ESnd e'                 -> step_snd g e'
-  | EHd e'                  -> step_hd g e'
-  | ETl e'                  -> step_tl g e'
-  | EEmpty e'               -> step_empty g e'
-  | ERef e'                 -> step_ref g e'
-  | EAsgn (e1, e2)          -> step_asgn g e1 e2
-  | EDeref e'               -> step_deref g e'
-  | ESeq (e1, e2)           -> step_seq g e1 e2
-  | EWhile (e1, e2)         -> step_while g e1 e2
-  | EArr (t, e')            -> step_arr g t e'
-  | EAcs (e1, e2)           -> step_acs g e1 e2
-  | e_terminal              -> g, e_terminal
+  | EBop (o, e1, e2)    -> step_bin_exp g o e1 e2
+  | EIf (e1, e2, e3)    -> step_if g e1 e2 e3
+  | ELet (x, t, e1, e2) -> step_let g x t e1 e2
+  | EApp (e1, e2)       -> step_func_app g e1 e2
+  | EPair (e1, e2)      -> step_pair g e1 e2
+  | EFst e'             -> step_fst g e'
+  | ESnd e'             -> step_snd g e'
+  | EHd e'              -> step_hd g e'
+  | ETl e'              -> step_tl g e'
+  | EEmpty e'           -> step_empty g e'
+  | ERef e'             -> step_ref g e'
+  | EAsgn (e1, e2)      -> step_asgn g e1 e2
+  | EDeref e'           -> step_deref g e'
+  | ESeq (e1, e2)       -> step_seq g e1 e2
+  | EWhile (e1, e2)     -> step_while g e1 e2
+  | EArr (t, e')        -> step_arr g t e'
+  | EAcs (e1, e2)       -> step_acs g e1 e2
+  | e_terminal          -> g, e_terminal
 and step_bin_exp g o e1 e2 =
   if is_value e1 && is_value e2 then
     let v =
