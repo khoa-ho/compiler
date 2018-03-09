@@ -581,8 +581,7 @@ and step_acs g e1 e2 =
     match e1 with
     | Arr (n, len) ->
       if i < 0 || i >= len then 
-        error (sprintf "Array index out of bound. Expected 0 <= i < %s, got i = %s" 
-                 (string_of_int len) (string_of_int i))
+        error (sprintf "Array index out of bound. Expected 0 <= i < %d, got i = %d" len i)
       else
         g, Ptr (n + i)
     | _ -> error (sprintf "Expected an array, got %s" (string_of_exp g e1))
