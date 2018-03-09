@@ -68,7 +68,7 @@ let rec string_of_typ (t:typ) : string =
   | TypRef t  -> sprintf "<%s>" (string_of_typ t)
   | TypArr t  -> sprintf "array<%s>" (string_of_typ t)
 
-let rec string_of_exp g (e:exp) : string =
+let rec string_of_exp (g:exp Environ.t) (e:exp) : string =
   match e with
   | EBop (o, e1, e2)        -> string_of_bin_exp g o e1 e2
   | EIf (e1, e2, e3)        -> string_of_if g e1 e2 e3
