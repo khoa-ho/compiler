@@ -54,7 +54,10 @@ let string_of_token (t:token) : string =
   | TEnd     -> "end"
   | TNew     -> "new"
   | TArr     -> "array"
-  | THash    -> "#"
+  | TMatch   -> "match"
+  | TWith    -> "with"
+  | TPipe    -> "|"   
+  | TDSColon -> ";;"
   | EOF      -> "EOF"
 
 let string_of_token_list (toks:token list) : string =
@@ -104,10 +107,10 @@ rule lex =
   | int      { TInt (int_of_string (lexeme lexbuf)) }
   | float    { TFloat (float_of_string (lexeme lexbuf)) }
   | boolean  { TBool (bool_of_string (lexeme lexbuf)) }
-  | '+'      { TPlus }
-  | '-'      { TMinus }
-  | '*'      { TTimes }
-  | '/'      { TDiv }
+  | "+"      { TPlus }
+  | "-"      { TMinus }
+  | "*"      { TTimes }
+  | "/"      { TDiv }
   | "=="     { TEq }
   | "<="     { TLeq }
   | ">="     { TGeq }
@@ -115,8 +118,8 @@ rule lex =
   | ">"      { TGt }
   | "&&"     { TAnd }
   | "||"     { TOr }
-  | '('      { TLParen }
-  | ')'      { TRParen }
+  | "("      { TLParen }
+  | ")"      { TRParen }
   | "if"     { TIf }
   | "then"   { TThen }
   | "else"   { TElse }
@@ -125,7 +128,7 @@ rule lex =
   | "float"  { TTypFloat }
   | "bool"   { TTypBool }
   | "let"    { TLet }
-  | '='      { TAsgn }
+  | "="      { TAsgn }
   | "in"     { TIn }
   | "fix"    { TFix }
   | "fun"    { TFunc }
@@ -133,8 +136,8 @@ rule lex =
   | ","      { TComma }
   | "fst"    { TFst }
   | "snd"    { TSnd }
-  | '['      { TLBrack }
-  | ']'      { TRBrack }
+  | "["      { TLBrack }
+  | "]"      { TRBrack }
   | "::"     { TDColon }
   | "hd"     { THd }
   | "tl"     { TTl }
@@ -148,7 +151,10 @@ rule lex =
   | "end"    { TEnd }
   | "new"    { TNew }
   | "array"  { TArr }
-  | "#"      { THash }
+  | "match"  { TMatch }
+  | "with"   { TWith }
+  | "|"      { TPipe }
+  | ";;"     { TDSColon }
   | var      { TVar (lexeme lexbuf) }
   | white    { lex lexbuf }
   | newline  { next_line lexbuf; lex lexbuf }

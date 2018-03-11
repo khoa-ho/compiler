@@ -43,6 +43,8 @@ To compile more than 1 file, just add all the source_file_paths separated by spa
 Currently, the language supports the following grammar:
 
 ```
+stmt ::= e;;
+
 e ::= () | NaN | n | b | x | (e1 (+) e2) | if e1 then e2 else e3 
     | let x : t = e1 in e2 | fun (x:t1) : t2 -> e | fix f (x:t1) : t2 -> e | e1 (e2)
     | (e1, e2) | fst e | snd e |
@@ -72,7 +74,7 @@ let max : int->([int]->int) =
       else
         f (cur_max) (tl l)
 in 
-max (0) (4 :: 7 :: 2 :: 1 :: [] : int)#
+max (0) (4 :: 7 :: 2 :: 1 :: [] : int);;
 
 let n : int = 10 in
 let x : array<int> = new int[n] in 
@@ -81,7 +83,7 @@ while !y < n do
   x[!y] := !y * !y;
   y := !y + 1
 end;
-x#
+x;;
 ```
 Then
 ```

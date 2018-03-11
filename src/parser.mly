@@ -21,7 +21,8 @@
 %token TRef TColonEq TBang TSColon
 %token TWhile TDo TEnd
 %token TNew TArr
-%token THash EOF
+%token TMatch TWith TPipe
+%token TDSColon EOF
 
 %left TIn TArrow
 %right TSColon
@@ -47,7 +48,7 @@ parse:
   | stmt = statement m = parse   { stmt :: m }
 
 statement:
-  | e = expr THash               { e }
+  | e = expr TDSColon            { e }
 
 expr:
   | TLParen TRParen              { EUnit }

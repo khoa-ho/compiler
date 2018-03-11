@@ -47,6 +47,7 @@ type exp =
   | EWhile of exp * exp
   | EArr   of typ * exp
   | EAcs   of exp * exp
+  | EMatch of string * exp list
   | Ptr    of int
   | Arr    of int * int
 

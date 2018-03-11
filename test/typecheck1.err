@@ -5,4 +5,4 @@ let fact : int->int =
     else
       n * f (n <= 1)
 in 
-fact (5)#
+fact (5);;
