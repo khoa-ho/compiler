@@ -1,11 +1,11 @@
 {
 open Parser
 open Lexing
-open Lang
 
 let string_of_token (t:token) : string =
   match t with
   | TNan     -> "NaN"
+  | TBin bin -> Lang.string_of_bin bin 
   | TInt n   -> string_of_int n
   | TFloat f -> string_of_float f
   | TBool b  -> string_of_bool b
@@ -21,8 +21,9 @@ let string_of_token (t:token) : string =
   | TGeq     -> ">="
   | TLt      -> "<"
   | TGt      -> ">"
-  | TAnd     -> "&"
-  | TOr      -> "|"
+  | TAnd     -> "&&"
+  | TOr      -> "||"
+  | TNot     -> "not"
   | TIf      -> "if"
   | TThen    -> "then"
   | TElse    -> "else"
@@ -56,7 +57,13 @@ let string_of_token (t:token) : string =
   | TArr     -> "array"
   | TMatch   -> "match"
   | TWith    -> "with"
-  | TPipe    -> "|"   
+  | TPipe    -> "|" 
+  | TLAnd    -> "land"
+  | TLOr     -> "lor"
+  | TLXor    -> "lxor"
+  | TLNot    -> "lnot"
+  | TLShift  -> "<<"
+  | TRShift  -> ">>"   
   | TDSColon -> ";;"
   | EOF      -> "EOF"
 
@@ -87,6 +94,8 @@ let position lexbuf =
   pos.pos_fname pos.pos_lnum (pos.pos_cnum - pos.pos_bol)
 }
 
+let binary = '0' ('b' | 'B') ('0' | '1')+
+
 let digit = ['0'-'9']
 let int = digit+
 let frac = '.' digit+
@@ -104,6 +113,7 @@ let var = alpha ['a'-'z' 'A'-'Z' '0'-'9' '_']*
 rule lex = 
   parse
   | "NaN"    { TNan }
+  | binary   { TBin (int_of_string (lexeme lexbuf)) }
   | int      { TInt (int_of_string (lexeme lexbuf)) }
   | float    { TFloat (float_of_string (lexeme lexbuf)) }
   | boolean  { TBool (bool_of_string (lexeme lexbuf)) }
@@ -118,6 +128,7 @@ rule lex =
   | ">"      { TGt }
   | "&&"     { TAnd }
   | "||"     { TOr }
+  | "not"    { TNot }
   | "("      { TLParen }
   | ")"      { TRParen }
   | "if"     { TIf }
@@ -154,6 +165,12 @@ rule lex =
   | "match"  { TMatch }
   | "with"   { TWith }
   | "|"      { TPipe }
+  | "land"   { TLAnd }
+  | "lor"    { TLOr }
+  | "lxor"   { TLXor }
+  | "lnot"   { TLNot }
+  | "<<"     { TLShift }
+  | ">>"     { TRShift } 
   | ";;"     { TDSColon }
   | var      { TVar (lexeme lexbuf) }
   | white    { lex lexbuf }

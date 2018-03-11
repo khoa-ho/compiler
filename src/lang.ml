@@ -6,6 +6,7 @@ module Environ = Map.Make(struct type t = int let compare = compare end)
 type bop = OPlus | OMinus | OTimes | ODiv 
          | OEq | OLeq | OGeq | OLt | OGt
          | OAnd | OOr
+         | OLAnd | OLOr | OLXor | OLShift | ORShift
 
 type typ =
   | TypUnit
@@ -22,6 +23,7 @@ type typ =
 type exp =
   | EUnit
   | ENan
+  | EBin   of int
   | EInt   of int
   | EFloat of float
   | EBool  of bool
@@ -47,7 +49,10 @@ type exp =
   | EWhile of exp * exp
   | EArr   of typ * exp
   | EAcs   of exp * exp
-  | EMatch of string * exp list
+  | EPm    of exp * exp
+  | EMatch of exp * exp list
+  | ENot   of exp
+  | ELNot  of exp
   | Ptr    of int
   | Arr    of int * int
 
@@ -92,9 +97,26 @@ let rec string_of_exp (g:exp Environ.t) (e:exp) : string =
   | EWhile (e1, e2)         -> string_of_while g e1 e2
   | EArr (t, e')            -> string_of_arr g t e'
   | EAcs (e1, e2)           -> string_of_acs g e1 e2
+  | EPm (e1, e2)            -> string_of_pml g e1 e2
+  | EMatch (e', e_lst)      -> string_of_match g e' e_lst
+  | ENot e'                 -> string_of_prefix_op g "not" e'
+  | ELNot e'                -> string_of_prefix_op g "lnot" e'
   | Ptr n                   -> string_of_ptr g n
   | Arr (n, len)            -> string_of_arr_ptr g n len
   | e_terminal              -> string_of_terminal_exp g e_terminal
+and string_of_bin e =
+  let bin_of_int d =
+    if d < 0 then error "Invalid binary int" 
+    else if d = 0 then "0" 
+    else
+      let rec aux acc d =
+        if d = 0 then acc 
+        else
+          aux (string_of_int (d land 1) :: acc) (d lsr 1)
+      in
+      "0b" ^ String.concat "" (aux [] d)
+  in 
+  bin_of_int e
 and string_of_bin_exp g o e1 e2 =
   let op_str = string_of_bop o in
   sprintf "(%s %s %s)" (string_of_exp g e1) op_str (string_of_exp g e2) 
@@ -138,6 +160,11 @@ and string_of_arr g t e =
   sprintf "(new %s[%s])" (string_of_typ t) (string_of_exp g e)
 and string_of_acs g e1 e2 =
   sprintf "%s[%s]" (string_of_exp g e1) (string_of_exp g e2)
+and string_of_pml g e1 e2 =
+  sprintf "| %s -> %s" (string_of_exp g e1) (string_of_exp g e2)
+and string_of_match g e e_lst =
+  sprintf "match %s with %s" (string_of_exp g e) 
+    (String.concat " " (List.map (string_of_exp g) e_lst))
 and string_of_ptr g n =
   sprintf "Ptr(%d):{%s}" n (string_of_exp g (Environ.find n g))
 and string_of_arr_ptr g n len =
@@ -149,21 +176,27 @@ and string_of_arr_ptr g n len =
   sprintf "[%s]" (String.concat ", " (List.rev (list_of_ptr_string n [])))
 and string_of_bop o =
   match o with
-  | OPlus  -> "+"
-  | OMinus -> "-"
-  | OTimes -> "*"
-  | ODiv   -> "/"
-  | OEq    -> "=="
-  | OLeq   -> "<="
-  | OGeq   -> ">="
-  | OLt    -> "<"
-  | OGt    -> ">"
-  | OAnd   -> "&&"
-  | OOr    -> "||"
+  | OPlus   -> "+"
+  | OMinus  -> "-"
+  | OTimes  -> "*"
+  | ODiv    -> "/"
+  | OEq     -> "=="
+  | OLeq    -> "<="
+  | OGeq    -> ">="
+  | OLt     -> "<"
+  | OGt     -> ">"
+  | OAnd    -> "&&"
+  | OOr     -> "||"
+  | OLAnd   -> "land"
+  | OLOr    -> "lor"
+  | OLXor   -> "lxor"
+  | OLShift -> "<<"
+  | ORShift -> ">>"
 and string_of_terminal_exp g e =
   match e with
   | EUnit    -> "()"
   | ENan     -> "NaN"
+  | EBin bin -> string_of_bin bin
   | EInt n   -> string_of_int n
   | EFloat f -> string_of_float f
   | EBool b  -> string_of_bool b
@@ -176,6 +209,7 @@ let rec typecheck (g:typ Context.t) (e:exp) : typ =
   match e with
   | EUnit    -> TypUnit
   | ENan     -> TypNan
+  | EBin _
   | EInt _   -> TypInt
   | EFloat _ -> TypFloat
   | EBool _  -> TypBool
@@ -208,7 +242,13 @@ let rec typecheck (g:typ Context.t) (e:exp) : typ =
       | OAnd | OOr -> 
         begin match (t1, t2) with
           | (TypBool, TypBool) -> TypBool
-          | _-> error (sprintf "Expect 2 boolean for operator %s, got type %s and %s" 
+          | _-> error (sprintf "Expect 2 booleans for operator %s, got type %s and %s" 
+                         (string_of_exp e) (string_of_typ t1) (string_of_typ t2))
+        end
+      | OLAnd | OLOr | OLXor | OLShift | ORShift ->
+        begin match (t1, t2) with
+          | (TypInt, TypInt) -> TypInt
+          | _-> error (sprintf "Expect 2 ints for operator %s, got type %s and %s" 
                          (string_of_exp e) (string_of_typ t1) (string_of_typ t2))
         end
     end
@@ -362,6 +402,47 @@ let rec typecheck (g:typ Context.t) (e:exp) : typ =
     else
       error (sprintf "Expected type int for %s in %s, got type %s"
                (string_of_exp e2) (string_of_exp e) (string_of_typ t2))
+  | EMatch (e', e_lst) ->
+    let t = typecheck g e' in
+    let e_pat_fst = List.hd e_lst in
+    let t' = 
+      match e_pat_fst with
+      | EPm (_, e2) -> typecheck g e2
+      | e'' -> error (sprintf "Expected a pattern matching for %s in %s, got %s" 
+                        (string_of_exp e'') (string_of_exp e) (string_of_typ (typecheck g e'')))
+    in
+    let rec typecheck_pat lst =
+      match lst with
+      | [] -> t'
+      | EPm (e1, e2) :: tl -> 
+        let t1 = typecheck g e1 in
+        let t2 = typecheck g e2 in
+        if t1 <> t then
+          error (sprintf "Expected type %s for %s in %s, got %s" 
+                   (string_of_typ t) (string_of_exp e1) (string_of_exp e) (string_of_typ t1)) 
+        else if t2 <> t' then
+          error (sprintf "Expected type %s for %s in %s, got %s" 
+                   (string_of_typ t') (string_of_exp e2) (string_of_exp e) (string_of_typ t2))
+        else
+          typecheck_pat tl
+      | e'' :: _ -> error (sprintf "Expected a pattern matching for %s in %s, got %s" 
+                             (string_of_exp e'') (string_of_exp e) (string_of_typ (typecheck g e'')))
+    in
+    typecheck_pat e_lst
+  | ENot e' -> 
+    let t' = typecheck g e' in
+    if t' = TypBool then t'
+    else
+      error (sprintf "Expected type bool for %s in %s, got %s"
+               (string_of_exp e') (string_of_exp e') (string_of_typ t'))
+  | ELNot e' -> 
+    let t' = typecheck g e' in
+    if t' = TypInt then t'
+    else
+      error (sprintf "Expected type int for %s in %s, got %s"
+               (string_of_exp e') (string_of_exp e') (string_of_typ t'))
+  | EPm (_, _) -> error ("An expr to be matched is needed for the pattern matching " 
+                         ^ (string_of_exp e))
   | _ -> error "No typecheck supported yet"
 
 let type_check (e:exp) : typ =
@@ -393,6 +474,10 @@ let rec subst (g:exp Environ.t) (v:exp) (x:string) (e:exp) : exp =
   | EWhile (e1, e2)        -> EWhile (sub e1, sub e2)
   | EArr (t, e')           -> EArr (t, sub e')
   | EAcs (e1, e2)          -> EAcs (sub e1, sub e2)
+  | EPm (e1, e2)           -> EPm (sub e1, sub e2)
+  | EMatch (e', e_lst)     -> EMatch (sub e', List.map sub e_lst)
+  | ENot e'                -> ENot (sub e')
+  | ELNot e'               -> ELNot (sub e')
   | EVar x' when x = x'    -> v
   | e_without_var          -> e_without_var
 
@@ -432,16 +517,23 @@ and step (g:exp Environ.t) (e:exp) : (exp Environ.t * exp) =
   | EWhile (e1, e2)     -> step_while g e1 e2
   | EArr (t, e')        -> step_arr g t e'
   | EAcs (e1, e2)       -> step_acs g e1 e2
+  | ENot e'             -> step_not g e'
+  | ELNot e'            -> step_lnot g e'
+  | EBin bin            -> g, EInt bin
   | e_terminal          -> g, e_terminal
 and step_bin_exp g o e1 e2 =
   if is_value e1 && is_value e2 then
+    let e1, e2 =
+      match e1, e2 with
+      | EInt n1, EFloat f2   -> EFloat (float_of_int n1), EFloat f2
+      | EFloat f1, EInt n2   -> EFloat f1, EFloat (float_of_int n2)
+      | e1', e2'             -> e1', e2'
+    in
     let v =
-      match (e1, e2) with
-      | (EInt n1, EInt n2)     -> step_int_bin_exp o n1 n2
-      | (EInt n1, EFloat f2)   -> step_float_bin_exp o (float_of_int n1) f2
-      | (EFloat f1, EInt n2)   -> step_float_bin_exp o f1 (float_of_int n2)
-      | (EFloat f1, EFloat f2) -> step_float_bin_exp o f1 f2
-      | (EBool b1, EBool b2)   -> step_bool_bin_exp o b1 b2
+      match e1, e2 with
+      | EInt n1, EInt n2     -> step_int_bin_exp o n1 n2
+      | EFloat f1, EFloat f2 -> step_float_bin_exp o f1 f2
+      | EBool b1, EBool b2   -> step_bool_bin_exp o b1 b2
       | _ -> error (sprintf "Expected 2 numbers or 2 booleans, got %s and %s" 
                       (string_of_exp g e1) (string_of_exp g e2))
     in g, v
@@ -590,22 +682,41 @@ and step_acs g e1 e2 =
     let s = step g e2 in fst s, EAcs (e1, snd s)
   else
     let s = step g e1 in fst s, EAcs (snd s, e2)
+and step_not g e =
+  if is_value e then 
+    match e with
+    | EBool b -> g, EBool (not b)
+    | _ -> error (sprintf "Expected a boolean, got %s" (string_of_exp g e))
+  else 
+    let s = step g e in fst s, ENot (snd s)
+and step_lnot g e =
+  if is_value e then 
+    match e with
+    | EInt n -> g, EInt (lnot n)
+    | _ -> error (sprintf "Expected an int, got %s" (string_of_exp g e))
+  else 
+    let s = step g e in fst s, ELNot (snd s)
 and step_int_bin_exp o n1 n2 =
   match o with
-  | OPlus  -> EInt (n1 + n2)
-  | OMinus -> EInt (n1 - n2)
-  | OTimes -> EInt (n1 * n2)
-  | ODiv   -> 
+  | OLAnd   -> EInt (n1 land n2)
+  | OLOr    -> EInt (n1 lor n2)
+  | OLXor   -> EInt (n1 lxor n2)
+  | OLShift -> EInt (n1 lsl n2)
+  | ORShift -> EInt (n1 lsr n2)
+  | OPlus   -> EInt (n1 + n2)
+  | OMinus  -> EInt (n1 - n2)
+  | OTimes  -> EInt (n1 * n2)
+  | ODiv    -> 
     begin match (n1, n2) with
       | (0, 0) -> ENan
       | (_, 0) -> error "Division by zero"
       | (_, _) -> EInt (n1 / n2)
     end
-  | OEq  -> EBool (n1 = n2) 
-  | OLeq -> EBool (n1 <= n2)
-  | OGeq -> EBool (n1 >= n2)
-  | OLt  -> EBool (n1 < n2)
-  | OGt  -> EBool (n1 > n2)
+  | OEq     -> EBool (n1 = n2) 
+  | OLeq    -> EBool (n1 <= n2)
+  | OGeq    -> EBool (n1 >= n2)
+  | OLt     -> EBool (n1 < n2)
+  | OGt     -> EBool (n1 > n2)
   | _ -> error (sprintf "Expected 2 numbers for the operator '%s', got %d and %d" 
                   (string_of_bop o) n1 n2)
 and step_float_bin_exp o f1 f2 =
@@ -624,20 +735,18 @@ and step_float_bin_exp o f1 f2 =
   | OGeq -> EBool (f1 >= f2)
   | OLt  -> EBool (f1 < f2)
   | OGt  -> EBool (f1 > f2)
-  | _ -> error (sprintf "Expected 2 numbers for the operator '%s', got %f and %f" 
-                  (string_of_bop o) f1 f2)
+  | _ -> failwith "Wtf"
 and step_bool_bin_exp o b1 b2 =
   match o with
   | OAnd -> EBool (b1 && b2)
   | OOr  -> EBool (b1 || b2)
-  | _ -> error (sprintf "Expected 2 booleans for the operator '%s', got %b and %b" 
-                  (string_of_bop o) b1 b2)
+  | _ -> failwith "Wtf"
 
 let rec eval_step (g:exp Environ.t) (e:exp) : unit =
   if is_value e then 
-    string_of_exp g e |> print_endline
+    string_of_exp g e |> sprintf "∴  %s\n" |> print_endline
   else begin 
-    string_of_exp g e |> print_endline;
+    string_of_exp g e |> sprintf "=> %s" |> print_endline;
     let s = step g e in eval_step (fst s) (snd s)
   end
 

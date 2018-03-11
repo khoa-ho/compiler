@@ -4,13 +4,14 @@
 %}
 
 %token TNan
+%token <int> TBin
 %token <int> TInt
 %token <float> TFloat
 %token <bool> TBool
 %token <string> TVar
 %token TPlus TMinus TTimes TDiv 
 %token TEq TGeq TLeq TLt TGt
-%token TAnd TOr
+%token TAnd TOr TNot
 %token TLParen TRParen
 %token TIf TThen TElse
 %token TColon TTypInt TTypFloat TTypBool
@@ -22,6 +23,7 @@
 %token TWhile TDo TEnd
 %token TNew TArr
 %token TMatch TWith TPipe
+%token TLAnd TLOr TLXor TLNot TLShift TRShift 
 %token TDSColon EOF
 
 %left TIn TArrow
@@ -30,10 +32,14 @@
 %right TColonEq
 %left TOr
 %left TAnd
+%nonassoc TNot
 %left TEq TGeq TLeq TLt TGt
 %right TDColon
 %left TPlus TMinus       
 %left TTimes TDiv
+%left TLAnd TLOr TLXor
+%nonassoc TLNot
+%right TLShift TRShift
 %right UMINUS
 %nonassoc TLParen TLBrack
 %nonassoc TFst TSnd THd TTl TEmpty TRef
@@ -53,6 +59,7 @@ statement:
 expr:
   | TLParen TRParen              { EUnit }
   | TNan                         { ENan }
+  | bin = TBin                   { EBin bin }
   | i = TInt                     { EInt i }
   | f = TFloat                   { EFloat f }
   | b = TBool                    { EBool b }
@@ -75,8 +82,7 @@ expr:
   | TSnd e = expr                { ESnd e }
   | TLBrack TRBrack TColon t = typ %prec TDColon
     { ENil t } 
-  | e1 = expr TDColon e2 = expr
-    { ECons (e1, e2) }
+  | e1 = expr TDColon e2 = expr  { ECons (e1, e2) }
   | THd e = expr                 { EHd e }
   | TTl e = expr                 { ETl e }
   | TEmpty e = expr              { EEmpty e }
@@ -90,6 +96,10 @@ expr:
     { EArr (t, e)}
   | e1 = expr TLBrack e2 = expr TRBrack
     { EAcs (e1, e2) }
+  | TMatch e = expr TWith pml = pat_match_list
+    { EMatch (e, pml) }
+  | TNot e = expr                { ENot e }
+  | TLNot e = expr               { ELNot e }
 
 bin_expr:
   | TMinus e = expr %prec UMINUS { EBop (OMinus, EInt 0, e) }
@@ -104,6 +114,11 @@ bin_expr:
   | e1 = expr TGt e2 = expr      { EBop (OGt, e1, e2) }
   | e1 = expr TAnd e2 = expr     { EBop (OAnd, e1, e2) }
   | e1 = expr TOr e2 = expr      { EBop (OOr, e1, e2) }
+  | e1 = expr TLAnd e2 = expr    { EBop (OLAnd, e1, e2) }
+  | e1 = expr TLOr e2 = expr     { EBop (OLOr, e1, e2) }
+  | e1 = expr TLXor e2 = expr    { EBop (OLXor, e1, e2) }
+  | e1 = expr TLShift e2 = expr  { EBop (OLShift, e1, e2) }
+  | e1 = expr TRShift e2 = expr  { EBop (ORShift, e1, e2) }        
 
 var_typ_asgn:
   | TLParen x = TVar ta = typ_asgn TRParen
@@ -122,3 +137,25 @@ typ:
   | TLBrack t = typ TRBrack      { TypList t }
   | TLt t = typ TGt              { TypRef t }
   | TArr TLt t = typ TGt         { TypArr t }
+
+
+pat_match_list:
+  | pml = separated_nonempty_list(TPipe, pat_match) 
+    { pml }
+  | TPipe pml = pat_match_list   { pml }
+
+pat_match:
+  | e1 = expr TArrow e2 = expr   { EPm (e1, e2) }
+
+/*
+pattern:
+  | p = pair_e                   { p }
+  | l = list_e                   { l }
+
+pair_e:
+  | TLParen e1 = expr TComma e2 = expr TRParen
+    { EPair (e1, e2) }
+
+list_e:
+  | e1 = expr TDColon e2 = expr  { ECons (e1, e2) }
+*/
