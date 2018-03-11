@@ -33,6 +33,10 @@ if (let x : int = 5 in x <= 10) then 2 else 3;;
 
 4 +    -5   * 2;;
 
+false && (4 < 4.1);;
+(9 > 10) || (9 == 9);;
+not (true && false);;
+
 let x : int = 2 + 3 in x <= 10;;
 let y : int = 10 in let y : int = 1 in y + y;;
 
@@ -112,3 +116,12 @@ while !y < n do
   y := !y + 1
 end;
 x;;
+
+0b100110 + 4.6;;
+0b100 << 2;;
+0b100 >> 2;;
+4 << 2;;
+0b10101010 land 0b01010101;;
+0b10101010 lor 0b01010101;;
+0b11110000 lxor 0b11111111;;
+0b11110000 lxor 255;;
