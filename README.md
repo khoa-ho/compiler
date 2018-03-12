@@ -45,17 +45,21 @@ Currently, the language supports the following grammar:
 ```
 stmt ::= e;;
 
-e ::= () | NaN | n | b | x | (e1 (+) e2) | if e1 then e2 else e3 
-    | let x : t = e1 in e2 | fun (x:t1) : t2 -> e | fix f (x:t1) : t2 -> e | e1 (e2)
-    | (e1, e2) | fst e | snd e |
-    | [] : t | e1 :: e2 | hd e | tl e | empty e
-    | ref e | e1 := e2 | !e | e1 ; e2 | while e1 do e2 end
-    | new t[n] | e1[e2] | e1 := e2
+  e ::= () | NaN | binary | int | float | boolean | variable
+      | (e1 (+) e2) | if e1 then e2 else e3 
+      | let x : t = e1 in e2 | fun (x:t1) : t2 -> e | fix f (x:t1) : t2 -> e | e1 (e2)
+      | (e1, e2) | fst e | snd e
+      | [] : t | e1 :: e2 | hd e | tl e | empty e
+      | ref e | e1 := e2 | !e | e1 ; e2 | while e1 do e2 end
+      | new t[n] | e1[e2] | e1 := e2
+      | not e | lnot e
 
-(+) ::= + | - | * | / | == | <= | >= | < | > | && | ||
+(+) ::= + | - | * | / 
+      | == | <= | >= | < | > | && | ||
+      | land | lor | lxor | << | >> 
 
-t ::= unit | nan | int | float | bool | t1 -> t2 |  
-    | t1 * t2 | [t] | <t> | array<t>
+  t ::= unit | nan | int | float | bool 
+      | t1 -> t2 | t1 * t2 | [t] | <t> | array<t>
 ```  
 
 #### Following is an example 
