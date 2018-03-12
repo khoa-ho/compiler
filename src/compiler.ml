@@ -50,30 +50,46 @@ let compile filename =
     with Lang.TypeError -> exit 1
 
 let rec run_repl () =
-  print_string "# ";
-  let input = read_line () in
-  if input = "quit" then ()
-  else
-    let interpret ast =
-      let typ = Lang.type_check ast in
-      let state = Lang.interpret ast in
-      Lang.string_of_exp (Lang.fst state) (Lang.snd state) 
-      |> Printf.sprintf "- : %s = %s" (Lang.string_of_typ typ)
-      |> print_endline
+  let read_cmd () =
+    let _ = print_string "# "; flush stdout in
+    let input () = input_char stdin in
+    let rec parse acc ch1 ch2 =
+      let ch3 = input () in
+      if ch1 = ';' && ch2 = ';' && ch3 = '\n' then 
+        String.concat "" (List.map (String.make 1) (List.rev acc))
+      else
+        parse (ch3 :: acc) ch2 ch3
     in
-    try
-      input
-      |> Lexing.from_string 
-      |> Parser.parse Lexer.lex
-      |> List.iter interpret
-    with
-    | Lang.TypeError -> run_repl ()
-    | Lexer.SyntaxError msg -> 
-      print_endline ("Error: " ^ msg); 
-      run_repl () 
-    | _ -> 
-      print_endline "Error: Parsing error"; 
-      run_repl ()
+    let ch1 = input () in
+    let ch2 = input () in
+    parse (ch2 :: ch1 :: []) ch1 ch2
+  in
+  let interpret ast =
+    let typ = Lang.type_check ast in
+    let state = Lang.interpret ast in
+    Lang.string_of_exp (Lang.fst state) (Lang.snd state) 
+    |> Printf.sprintf "- : %s = %s" (Lang.string_of_typ typ)
+    |> print_endline
+  in
+  let input_string = read_cmd () in
+  if input_string = "quit;;" then ()
+  else
+    let _ = 
+      try
+        input_string
+        |> Lexing.from_string 
+        |> Parser.parse Lexer.lex
+        |> List.iter interpret
+      with
+      | Lang.TypeError -> run_repl ()
+      | Lexer.SyntaxError msg -> 
+        print_endline ("Error: " ^ msg); 
+        run_repl () 
+      | _ -> 
+        print_endline "Error: Parsing error"; 
+        run_repl ()
+    in
+    run_repl ()
 
 let main () =
   let _ = cli () in
