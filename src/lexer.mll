@@ -91,7 +91,7 @@ let position (lexbuf:lexbuf) : string =
   pos.pos_fname pos.pos_lnum (pos.pos_cnum - pos.pos_bol)
 }
 
-let binary = '0' ('b' | 'B') ('0' | '1')+
+let binary = '0' ('b' | 'B') ['0'-'1']+
 
 let digit = ['0'-'9']
 let int = digit+

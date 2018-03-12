@@ -39,6 +39,7 @@ To compile more than 1 file, just add all the source_file_paths separated by spa
 * `-parse`: Showing the abstract syntax tree generated after parsing the source
 * `-step`: Showing the small-step evaluation of the expression(s)
 * `-type`: Showing the type of the expression(s)
+* `-repl`: Using the toplevel, i.e. a REPL
 
 Currently, the language supports the following grammar:
 
@@ -98,9 +99,23 @@ $ ./compile.native example.src
 
 Changelog
 ---------
+### [0.7] - 2018-03-12
+#### Added
+- Binary integer literals ( `'0' ('b' | 'B') ['0'-'1']+` )
+- Bitwise operators: 
+  - And `land`, Or `lor`, Xor `lxor`, and Not `lnot`
+  - Shift-left `<<`, Shift-right `>>`
+- A Read–Eval–Print Loop (REPL), similar to `ocaml` toplevel
+  - To start, use the flag `-repl` in the CLI
+  - To use, enter a statement, i.e. an expression followed by `;;`, and hit enter
+  - To quit, use the directive `quit;;`
+#### Changed
+- The display formatting of `-step` mode is more informative
+- Statements are ended with `;;` instead of `#`
+
 ### [0.6] - 2018-03-07
 #### Added
-- Reference cell, a mutatble data structure
+- Reference cell, a mutable data structure
 - Imperative programming features such as assignment, sequence, and while loop
 - Array creation and access
 #### Changed
