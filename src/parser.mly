@@ -22,7 +22,6 @@
 %token TRef TColonEq TBang TSColon
 %token TWhile TDo TEnd
 %token TNew TArr
-%token TMatch TWith TPipe
 %token TLAnd TLOr TLXor TLNot TLShift TRShift 
 %token TDSColon EOF
 
@@ -96,8 +95,6 @@ expr:
     { EArr (t, e)}
   | e1 = expr TLBrack e2 = expr TRBrack
     { EAcs (e1, e2) }
-  | TMatch e = expr TWith pml = pat_match_list
-    { EMatch (e, pml) }
   | TNot e = expr                { ENot e }
   | TLNot e = expr               { ELNot e }
 
@@ -137,11 +134,3 @@ typ:
   | TLBrack t = typ TRBrack      { TypList t }
   | TLt t = typ TGt              { TypRef t }
   | TArr TLt t = typ TGt         { TypArr t }
-
-pat_match_list:
-  | pml = separated_nonempty_list(TPipe, pat_match) 
-    { pml }
-  | TPipe pml = pat_match_list   { pml }
-
-pat_match:
-  | e1 = expr TArrow e2 = expr   { EPm (e1, e2) }

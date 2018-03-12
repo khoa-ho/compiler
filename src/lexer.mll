@@ -55,9 +55,6 @@ let string_of_token (t:token) : string =
   | TEnd     -> "end"
   | TNew     -> "new"
   | TArr     -> "array"
-  | TMatch   -> "match"
-  | TWith    -> "with"
-  | TPipe    -> "|" 
   | TLAnd    -> "land"
   | TLOr     -> "lor"
   | TLXor    -> "lxor"
@@ -162,9 +159,6 @@ rule lex =
   | "end"    { TEnd }
   | "new"    { TNew }
   | "array"  { TArr }
-  | "match"  { TMatch }
-  | "with"   { TWith }
-  | "|"      { TPipe }
   | "land"   { TLAnd }
   | "lor"    { TLOr }
   | "lxor"   { TLXor }

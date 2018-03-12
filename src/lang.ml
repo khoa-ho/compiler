@@ -49,8 +49,6 @@ type exp =
   | EWhile of exp * exp
   | EArr   of typ * exp
   | EAcs   of exp * exp
-  | EPm    of exp * exp
-  | EMatch of exp * exp list
   | ENot   of exp
   | ELNot  of exp
   | Ptr    of int
@@ -99,8 +97,6 @@ let rec string_of_exp (g:exp Environ.t) (e:exp) : string =
   | EWhile (e1, e2)         -> string_of_while g e1 e2
   | EArr (t, e')            -> string_of_arr g t e'
   | EAcs (e1, e2)           -> string_of_acs g e1 e2
-  | EPm (e1, e2)            -> string_of_pml g e1 e2
-  | EMatch (e', e_lst)      -> string_of_match g e' e_lst
   | ENot e'                 -> string_of_prefix_op g "not" e'
   | ELNot e'                -> string_of_prefix_op g "lnot" e'
   | Ptr n                   -> string_of_ptr g n
@@ -162,11 +158,6 @@ and string_of_arr g t e =
   sprintf "(new %s[%s])" (string_of_typ t) (string_of_exp g e)
 and string_of_acs g e1 e2 =
   sprintf "%s[%s]" (string_of_exp g e1) (string_of_exp g e2)
-and string_of_pml g e1 e2 =
-  sprintf "| %s -> %s" (string_of_exp g e1) (string_of_exp g e2)
-and string_of_match g e e_lst =
-  sprintf "match %s with %s" (string_of_exp g e) 
-    (String.concat " " (List.map (string_of_exp g) e_lst))
 and string_of_ptr g n =
   sprintf "Ptr(%d):{%s}" n (string_of_exp g (Environ.find n g))
 and string_of_arr_ptr g n len =
@@ -404,33 +395,6 @@ let rec typecheck (g:typ Context.t) (e:exp) : typ =
     else
       error (sprintf "Expected type int for %s in %s, got type %s"
                (string_of_exp e2) (string_of_exp e) (string_of_typ t2))
-  | EMatch (e', e_lst) ->
-    let t = typecheck g e' in
-    let e_pat_fst = List.hd e_lst in
-    let t' = 
-      match e_pat_fst with
-      | EPm (_, e2) -> typecheck g e2
-      | e'' -> error (sprintf "Expected a pattern matching for %s in %s, got %s" 
-                        (string_of_exp e'') (string_of_exp e) (string_of_typ (typecheck g e'')))
-    in
-    let rec typecheck_pat lst =
-      match lst with
-      | [] -> t'
-      | EPm (e1, e2) :: tl -> 
-        let t1 = typecheck g e1 in
-        let t2 = typecheck g e2 in
-        if t1 <> t then
-          error (sprintf "Expected type %s for %s in %s, got %s" 
-                   (string_of_typ t) (string_of_exp e1) (string_of_exp e) (string_of_typ t1)) 
-        else if t2 <> t' then
-          error (sprintf "Expected type %s for %s in %s, got %s" 
-                   (string_of_typ t') (string_of_exp e2) (string_of_exp e) (string_of_typ t2))
-        else
-          typecheck_pat tl
-      | e'' :: _ -> error (sprintf "Expected a pattern matching for %s in %s, got %s" 
-                             (string_of_exp e'') (string_of_exp e) (string_of_typ (typecheck g e'')))
-    in
-    typecheck_pat e_lst
   | ENot e' -> 
     let t' = typecheck g e' in
     if t' = TypBool then t'
@@ -443,8 +407,6 @@ let rec typecheck (g:typ Context.t) (e:exp) : typ =
     else
       error (sprintf "Expected type int for %s in %s, got %s"
                (string_of_exp e') (string_of_exp e') (string_of_typ t'))
-  | EPm (_, _) -> error ("An expr to be matched is needed for the pattern matching " 
-                         ^ (string_of_exp e))
   | _ -> error "No typecheck supported yet"
 
 let type_check (e:exp) : typ =
@@ -476,8 +438,6 @@ let rec subst (g:exp Environ.t) (v:exp) (x:string) (e:exp) : exp =
   | EWhile (e1, e2)        -> EWhile (sub e1, sub e2)
   | EArr (t, e')           -> EArr (t, sub e')
   | EAcs (e1, e2)          -> EAcs (sub e1, sub e2)
-  | EPm (e1, e2)           -> EPm (sub e1, sub e2)
-  | EMatch (e', e_lst)     -> EMatch (sub e', List.map sub e_lst)
   | ENot e'                -> ENot (sub e')
   | ELNot e'               -> ELNot (sub e')
   | EVar x' when x = x'    -> v
