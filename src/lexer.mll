@@ -73,7 +73,7 @@ let string_of_token_list (toks:token list) : string =
 
 exception SyntaxError of string
 
-let curr_file lexbuf fname =
+let curr_file (lexbuf:lexbuf) (fname:string) : unit =
   let pos = lexbuf.lex_start_p in
   lexbuf.lex_curr_p <-
     { pos with pos_fname = fname;
@@ -81,14 +81,14 @@ let curr_file lexbuf fname =
                pos_lnum = pos.pos_lnum
     }
 
-let next_line lexbuf =
+let next_line (lexbuf:lexbuf) : unit =
   let pos = lexbuf.lex_curr_p in
   lexbuf.lex_curr_p <-
     { pos with pos_bol = lexbuf.lex_curr_pos;
                pos_lnum = pos.pos_lnum + 1
     }
 
-let position lexbuf =
+let position (lexbuf:lexbuf) : string =
   let pos = lexbuf.lex_curr_p in
   Printf.sprintf "in file '%s', line %d, character %d" 
   pos.pos_fname pos.pos_lnum (pos.pos_cnum - pos.pos_bol)
