@@ -58,8 +58,10 @@ type exp =
 
 let cur_address = ref 0
 
+exception TypeError
+
 let error err_msg =
-  fprintf stderr "Error: %s\n" err_msg; exit 1
+  fprintf stdout "Error: %s\n" err_msg; raise TypeError
 
 let rec string_of_typ (t:typ) : string =
   match t with
@@ -242,13 +244,13 @@ let rec typecheck (g:typ Context.t) (e:exp) : typ =
       | OAnd | OOr -> 
         begin match (t1, t2) with
           | (TypBool, TypBool) -> TypBool
-          | _-> error (sprintf "Expect 2 booleans for operator %s, got type %s and %s" 
+          | _-> error (sprintf "Expect 2 booleans in %s, got type %s and %s" 
                          (string_of_exp e) (string_of_typ t1) (string_of_typ t2))
         end
       | OLAnd | OLOr | OLXor | OLShift | ORShift ->
         begin match (t1, t2) with
           | (TypInt, TypInt) -> TypInt
-          | _-> error (sprintf "Expect 2 ints for operator %s, got type %s and %s" 
+          | _-> error (sprintf "Expect 2 ints in %s, got type %s and %s" 
                          (string_of_exp e) (string_of_typ t1) (string_of_typ t2))
         end
     end
