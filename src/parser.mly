@@ -138,7 +138,6 @@ typ:
   | TLt t = typ TGt              { TypRef t }
   | TArr TLt t = typ TGt         { TypArr t }
 
-
 pat_match_list:
   | pml = separated_nonempty_list(TPipe, pat_match) 
     { pml }
@@ -146,16 +145,3 @@ pat_match_list:
 
 pat_match:
   | e1 = expr TArrow e2 = expr   { EPm (e1, e2) }
-
-/*
-pattern:
-  | p = pair_e                   { p }
-  | l = list_e                   { l }
-
-pair_e:
-  | TLParen e1 = expr TComma e2 = expr TRParen
-    { EPair (e1, e2) }
-
-list_e:
-  | e1 = expr TDColon e2 = expr  { ECons (e1, e2) }
-*/
